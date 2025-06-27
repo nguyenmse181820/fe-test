@@ -1,0 +1,220 @@
+.aboutPage {
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+.hero {
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.9), rgba(59, 130, 246, 0.9)),
+              url('/images/airplane-hero.jpg') center/cover;
+  height: 50vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-align: center;
+  position: relative;
+}
+
+.heroContent {
+  max-width: 800px;
+  padding: 0 2rem;
+  animation: fadeIn 1s ease-out;
+}
+
+.heroTitle {
+  font-size: 3.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  line-height: 1.1;
+}
+
+.heroSubtitle {
+  font-size: 1.25rem;
+  opacity: 0.9;
+}
+
+.content {
+  max-width: 1200px;
+  margin: -4rem auto 0;
+  padding: 0 2rem 4rem;
+  position: relative;
+  z-index: 10;
+}
+
+.missionSection {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.missionSection h2 {
+  color: #1e3a8a;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.missionSection p {
+  color: #4b5563;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin-bottom: 4rem;
+}
+
+.statCard {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-5px);
+}
+
+.statIcon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.statNumber {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #1e3a8a;
+  margin-bottom: 0.5rem;
+}
+
+.statLabel {
+  color: #6b7280;
+  font-size: 1.125rem;
+}
+
+.valuesSection {
+  margin-bottom: 4rem;
+}
+
+.valuesSection h2 {
+  text-align: center;
+  color: #1e3a8a;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+}
+
+.valuesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+
+.valueCard {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.valueCard:hover {
+  transform: translateY(-5px);
+}
+
+.valueCard h3 {
+  color: #1e3a8a;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.valueCard p {
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.teamSection {
+  margin-bottom: 4rem;
+}
+
+.teamSection h2 {
+  text-align: center;
+  color: #1e3a8a;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+}
+
+.teamGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+
+.teamCard {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.teamCard:hover {
+  transform: translateY(-5px);
+}
+
+.teamImage {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.teamCard h3 {
+  color: #1e3a8a;
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.teamCard p {
+  color: #6b7280;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+  
+  .content {
+    padding: 0 1rem 2rem;
+    margin-top: -2rem;
+  }
+  
+  .statsGrid,
+  .valuesGrid,
+  .teamGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .missionSection,
+  .statCard,
+  .valueCard,
+  .teamCard {
+    padding: 1.5rem;
+  }
+} 

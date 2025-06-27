@@ -1,0 +1,333 @@
+/* MyRefundRequests.module.css */
+
+.container {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.statsCard {
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: default;
+}
+
+.statsCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.statsIcon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.requestCard {
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: 100%;
+}
+
+.requestCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.statusBadgeContainer {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.statusBadge {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.statusBadge.pending {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffecb5;
+}
+
+.statusBadge.approved {
+  background-color: #d1e7dd;
+  color: #0f5132;
+  border: 1px solid #badbcc;
+}
+
+.statusBadge.rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c2c7;
+}
+
+.statusBadge.processing {
+  background-color: #cff4fc;
+  color: #055160;
+  border: 1px solid #b6effb;
+}
+
+.amountDisplay {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #28a745;
+}
+
+.reasonText {
+  background-color: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border-left: 4px solid #007bff;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #495057;
+}
+
+.statusProgress {
+  margin: 1.5rem 0;
+}
+
+.progressStep {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.progressStep.active {
+  color: #007bff;
+  font-weight: 500;
+}
+
+.progressStep.completed {
+  color: #28a745;
+}
+
+.progressStep.pending {
+  color: #6c757d;
+}
+
+.progressIcon {
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+.timelineContainer {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.timelineContainer::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #dee2e6;
+}
+
+.timelineItem {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.timelineItem::before {
+  content: '';
+  position: absolute;
+  left: -0.75rem;
+  top: 0.25rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background-color: #007bff;
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px #007bff;
+}
+
+.timelineItem.completed::before {
+  background-color: #28a745;
+  box-shadow: 0 0 0 2px #28a745;
+}
+
+.timelineItem.pending::before {
+  background-color: #6c757d;
+  box-shadow: 0 0 0 2px #6c757d;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6c757d;
+}
+
+.emptyState .icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.5;
+}
+
+.emptyState h5 {
+  margin-bottom: 1rem;
+}
+
+.emptyState p {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.detailModal .modalHeader {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+  border-bottom: none;
+  border-radius: 0.375rem 0.375rem 0 0;
+}
+
+.detailModal .modalHeader .btn-close {
+  filter: invert(1);
+}
+
+.infoSection {
+  margin-bottom: 2rem;
+}
+
+.infoSection h6 {
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #f1f3f4;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.infoItem {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+  border-left: 4px solid #007bff;
+}
+
+.infoLabel {
+  font-weight: 600;
+  color: #6c757d;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.infoValue {
+  color: #212529;
+  font-size: 1rem;
+  word-break: break-word;
+}
+
+.proofImage {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.proofImage:hover {
+  transform: scale(1.02);
+}
+
+.statusDescription {
+  background: #e7f3ff;
+  border: 1px solid #b8daff;
+  border-radius: 6px;
+  padding: 1rem;
+  color: #004085;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.searchBar {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filterButton {
+  transition: all 0.2s ease;
+  border-radius: 20px;
+  padding: 0.375rem 1rem;
+  font-size: 0.875rem;
+}
+
+.filterButton:hover {
+  transform: translateY(-1px);
+}
+
+.refreshButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.refreshButton:disabled .icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .statsCard {
+    margin-bottom: 1rem;
+  }
+  
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .filterButton {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .container {
+    background-color: #121212;
+    color: #ffffff;
+  }
+  
+  .statsCard,
+  .requestCard,
+  .searchBar {
+    background-color: #1e1e1e;
+    border-color: #333;
+  }
+  
+  .infoItem {
+    background-color: #2d2d2d;
+  }
+  
+  .reasonText {
+    background-color: #2d2d2d;
+    color: #e0e0e0;
+  }
+}

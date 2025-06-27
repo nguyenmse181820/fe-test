@@ -1,0 +1,230 @@
+/* RefundStatusTimeline.module.css */
+
+.timeline {
+  margin: 1.5rem 0;
+}
+
+.timelineTitle {
+  color: #495057;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #f1f3f4;
+}
+
+.timelineContainer {
+  position: relative;
+}
+
+.timelineStep {
+  display: flex;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.timelineStep:last-child {
+  margin-bottom: 0;
+}
+
+.stepIndicator {
+  position: relative;
+  margin-right: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stepIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  background: white;
+  border: 3px solid;
+  transition: all 0.3s ease;
+}
+
+.stepIcon.completed {
+  border-color: #28a745;
+  background-color: #28a745;
+  color: white;
+}
+
+.stepIcon.active {
+  border-color: #007bff;
+  background-color: #007bff;
+  color: white;
+  animation: pulse 2s infinite;
+}
+
+.stepIcon.rejected {
+  border-color: #dc3545;
+  background-color: #dc3545;
+  color: white;
+}
+
+.stepIcon.pending {
+  border-color: #6c757d;
+  background-color: #f8f9fa;
+  color: #6c757d;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+  }
+}
+
+.stepConnector {
+  width: 3px;
+  height: 50px;
+  background-color: #dee2e6;
+  margin-top: 5px;
+  border-radius: 2px;
+  transition: background-color 0.3s ease;
+}
+
+.stepConnector.completed {
+  background-color: #28a745;
+}
+
+.stepContent {
+  flex: 1;
+  padding-top: 5px;
+}
+
+.stepHeader {
+  display: flex;
+  justify-content: between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  gap: 1rem;
+}
+
+.stepLabel {
+  margin: 0;
+  font-weight: 600;
+  color: #495057;
+  flex: 1;
+}
+
+.statusBadge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.stepDescription {
+  margin-bottom: 0.5rem;
+  color: #6c757d;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.stepTimestamp {
+  color: #8e9297;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.adminNote {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #fff3cd;
+  border: 1px solid #ffecb5;
+  border-radius: 4px;
+}
+
+.estimatedTime {
+  display: flex;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #17a2b8;
+}
+
+/* States */
+.timelineStep.completed .stepLabel {
+  color: #28a745;
+}
+
+.timelineStep.active .stepLabel {
+  color: #007bff;
+  font-weight: 700;
+}
+
+.timelineStep.rejected .stepLabel {
+  color: #dc3545;
+}
+
+.timelineStep.pending .stepLabel {
+  color: #6c757d;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stepHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .stepIcon {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .stepConnector {
+    height: 40px;
+  }
+  
+  .estimatedTime {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .timelineTitle,
+  .stepLabel {
+    color: #000000;
+  }
+  
+  .stepDescription {
+    color: #adb5bd;
+  }
+  
+  .stepTimestamp {
+    color: #6c757d;
+  }
+  
+  .stepIcon.pending {
+    background-color: #343a40;
+    color: #adb5bd;
+  }
+  
+  .estimatedTime {
+    background-color: #343a40;
+    border-left-color: #17a2b8;
+  }
+  
+  .adminNote {
+    background-color: #664d03;
+    border-color: #66512c;
+    color: #ffecb5;
+  }
+}

@@ -1,0 +1,340 @@
+/* RefundRequestForm.module.css */
+
+.modal .modalHeader {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border-bottom: none;
+  border-radius: 0.375rem 0.375rem 0 0;
+}
+
+.modal .modalHeader .btn-close {
+  filter: invert(1);
+}
+
+.stepIndicator {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.stepItem {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.stepItem:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: -30px;
+  top: 50%;
+  width: 60px;
+  height: 2px;
+  background-color: #dee2e6;
+  transform: translateY(-50%);
+}
+
+.stepItem.active:not(:last-child)::after {
+  background-color: #007bff;
+}
+
+.stepNumber {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+  background-color: #f8f9fa;
+  color: #6c757d;
+  border: 2px solid #dee2e6;
+}
+
+.stepItem.active .stepNumber {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.stepItem.completed .stepNumber {
+  background-color: #28a745;
+  color: white;
+  border-color: #28a745;
+}
+
+.stepLabel {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin: 0;
+}
+
+.stepItem.active .stepLabel {
+  color: #007bff;
+  font-weight: 600;
+}
+
+.stepItem.completed .stepLabel {
+  color: #28a745;
+}
+
+.reasonOption {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.reasonOption:hover {
+  border-color: #007bff;
+  background-color: #f8f9fa;
+}
+
+.reasonOption.selected {
+  border-color: #007bff;
+  background-color: #e7f3ff;
+}
+
+.reasonOption .form-check-input {
+  margin-top: 0.25rem;
+}
+
+.reasonTitle {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.25rem;
+}
+
+.reasonDescription {
+  color: #6c757d;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.amountInput {
+  position: relative;
+}
+
+.amountInput .form-control {
+  padding-left: 2.5rem;
+}
+
+.amountInput::before {
+  content: '₫';
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  font-weight: bold;
+  z-index: 3;
+}
+
+.fileUpload {
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.fileUpload:hover {
+  border-color: #007bff;
+  background-color: #f8f9fa;
+}
+
+.fileUpload.dragOver {
+  border-color: #28a745;
+  background-color: #f8fff8;
+}
+
+.fileUpload input[type="file"] {
+  display: none;
+}
+
+.fileIcon {
+  font-size: 2rem;
+  color: #6c757d;
+  margin-bottom: 1rem;
+}
+
+.bankAccountSection {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.bankAccountSection h6 {
+  color: #495057;
+  margin-bottom: 1rem;
+}
+
+.summaryCard {
+  background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+  border: none;
+  border-radius: 8px;
+}
+
+.summaryCard .card-body {
+  padding: 1.5rem;
+}
+
+.summaryItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.summaryItem:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.summaryLabel {
+  font-weight: 600;
+  color: #495057;
+}
+
+.summaryValue {
+  color: #212529;
+}
+
+.eligibilityAlert {
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.eligibilityAlert.alert-success {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  color: #155724;
+}
+
+.eligibilityAlert.alert-warning {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  color: #856404;
+}
+
+.bookingInfo {
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.bookingInfo .card-body {
+  padding: 1.5rem;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.infoLabel {
+  font-weight: 600;
+  color: #6c757d;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.infoValue {
+  color: #212529;
+  font-size: 1rem;
+}
+
+.loadingSpinner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Form validation styles */
+.form-control.is-invalid {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.form-control:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stepIndicator {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .stepItem:not(:last-child)::after {
+    display: none;
+  }
+  
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .summaryItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .bankAccountSection {
+    padding: 1rem;
+  }
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal .modal-body > div {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Print styles */
+@media print {
+  .modal {
+    position: static !important;
+    display: block !important;
+  }
+  
+  .modal-backdrop {
+    display: none !important;
+  }
+  
+  .modal-dialog {
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  
+  .modal-header,
+  .modal-footer {
+    display: none !important;
+  }
+}

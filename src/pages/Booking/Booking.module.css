@@ -1,0 +1,1133 @@
+/* Boeing Flight Booking System - Booking Page Styles */
+
+/* Main Container */
+.bookingPage {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px 0;
+}
+
+.bookingContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header */
+.bookingHeader {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  margin-bottom: 16px;
+}
+
+.backButton:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.headerContent h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px 0;
+}
+
+.headerContent p {
+  color: #6b7280;
+  margin: 0;
+  font-size: 16px;
+}
+
+/* Flight Summary */
+.flightSummary {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.flightRoute {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.routePoint {
+  flex: 1;
+  text-align: center;
+}
+
+.routeTime {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.routeLocation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.routeConnector {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  margin: 0 20px;
+}
+
+.routeLine {
+  width: 100%;
+  height: 2px;
+  background: #e5e7eb;
+  margin-bottom: 8px;
+}
+
+.routePlane {
+  color: #3b82f6;
+  background: white;
+  padding: 4px;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.routeDuration {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+.flightMeta {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Progress Steps */
+.progressSteps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.stepContainer {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #9ca3af;
+  transition: all 0.3s ease;
+  text-align: center;
+  min-width: 120px;
+}
+
+.step.active {
+  color: #3b82f6;
+}
+
+.step.completed {
+  color: #10b981;
+}
+
+.stepIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid currentColor;
+  background: white;
+  transition: all 0.3s ease;
+  margin-bottom: 4px;
+}
+
+.step.active .stepIcon {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.step.completed .stepIcon {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.stepName {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.stepConnector {
+  flex: 1;
+  height: 2px;
+  background: #e5e7eb;
+  margin: 0 12px;
+}
+
+/* Main Content */
+.mainContent {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.contentArea {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.stepContent {
+  padding: 32px;
+}
+
+/* Fare Selection */
+.fareSelection h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 24px 0;
+}
+
+.fareOptions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.fareOption {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.fareOption:hover {
+  border-color: #3b82f6;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+}
+
+.fareOption.selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+}
+
+.fareHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.fareHeader h4 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.farePrice {
+  font-size: 24px;
+  font-weight: 700;
+  color: #059669;
+}
+
+.fareFeatures {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fareFeature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #374151;
+  font-size: 14px;
+}
+
+/* Seat Selection */
+.seatSelection h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 16px 0;
+}
+
+.seatInfo {
+  color: #6b7280;
+  margin-bottom: 24px;
+  font-size: 16px;
+}
+
+.selectedSeats {
+  margin-top: 24px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.selectedSeats h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 12px 0;
+}
+
+.seatTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.seatTag {
+  background: #3b82f6;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.seatIncluded {
+  color: #059669;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+/* Passenger Forms */
+.passengerForms {
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.passengerFormHeader {
+  margin-bottom: 24px;
+}
+
+.passengerFormHeader h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px 0;
+}
+
+.passengerLimit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0 0 12px 0;
+}
+
+.passengerForm {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 20px;
+  background: #fafafa;
+}
+
+.passengerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.passengerHeader h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.autoFillBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.autoFillBtn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.autoFillUsed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #059669;
+  font-size: 14px;
+  font-weight: 500;
+  background: #ecfdf5;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1fae5;
+}
+
+.autoFillUsed span {
+  font-size: 12px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inputGroup label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.input, .select {
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.input:focus, .select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.contactInfo {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 24px;
+  margin-top: 24px;
+}
+
+.contactInfo h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px 0;
+}
+
+/* Payment Section */
+.paymentSection {
+  padding: 32px;
+}
+
+.voucherSection {
+  margin-bottom: 32px;
+}
+
+.voucherSection h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px 0;
+}
+
+.voucherContainer {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  background: #fafafa;
+}
+
+.voucherInput {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.voucherApplied {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #059669;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.loadingVouchers {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+.loadingSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.availableVouchers h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 12px 0;
+}
+
+.voucherList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.voucherCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.voucherCard:hover {
+  border-color: #3b82f6;
+}
+
+.voucherCard.selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.voucherInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.voucherCode {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.voucherName {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.voucherDiscount {
+  font-size: 14px;
+  font-weight: 500;
+  color: #059669;
+}
+
+.voucherMin {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.noVouchersMessage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+.paymentMethods h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px 0;
+}
+
+.paymentOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.paymentOption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.paymentOption:hover {
+  border-color: #3b82f6;
+}
+
+.paymentOption.selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.paymentOption input[type="radio"] {
+  margin: 0;
+}
+
+.paymentContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.paymentIcon {
+  color: #6b7280;
+}
+
+.paymentName {
+  font-size: 16px;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.paymentDesc {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Booking Summary Sidebar */
+.bookingSummary {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+  position: sticky;
+  top: 24px;
+}
+
+.bookingSummary h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 20px 0;
+}
+
+.summarySection {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.summarySection:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.summarySection h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 12px 0;
+}
+
+.summaryItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.summaryItem span:first-child {
+  color: #6b7280;
+}
+
+.summaryItem span:last-child {
+  color: #111827;
+  font-weight: 500;
+}
+
+.summaryItem.total {
+  border-top: 2px solid #e5e7eb;
+  margin-top: 12px;
+  padding-top: 16px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.summaryItem.total span:last-child {
+  color: #059669;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Navigation */
+.navigationBar {
+  background: white;
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.navButtons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.primaryBtn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.primaryBtn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.primaryBtn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.secondaryBtn {
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.secondaryBtn:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.btnSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Loading and Error States */
+.loadingContainer, .errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.errorContainer h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #dc2626;
+  margin: 0 0 12px 0;
+}
+
+.errorContainer p {
+  color: #6b7280;
+  margin-bottom: 24px;
+  max-width: 400px;
+}
+
+.errorIcon {
+  color: #dc2626;
+  margin-bottom: 16px;
+}
+
+/* Availability Info Styles */
+.availabilityLoading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f0f9ff;
+  border: 1px solid #0ea5e9;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.availabilityInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f0fdf4;
+  border: 1px solid #22c55e;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.availabilityInfo.warning {
+  background: #fef3c7;
+  border-color: #f59e0b;
+}
+
+.availabilityInfo .warningText {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.availabilityWarning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.refreshBtn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-left: auto;
+  transition: all 0.2s ease;
+}
+
+.refreshBtn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #374151;
+}
+
+.loadingSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #0ea5e9;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* End of Availability Info Styles */
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .mainContent {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .bookingSummary {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .bookingContainer {
+    padding: 0 16px;
+  }
+  
+  .flightRoute {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .routeConnector {
+    transform: rotate(90deg);
+    margin: 8px 0;
+  }
+  
+  .progressSteps {
+    padding: 16px;
+    overflow-x: auto;
+  }
+  
+  .step {
+    min-width: 80px;
+  }
+  
+  .stepIcon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .stepName {
+    font-size: 12px;
+  }
+  
+  .fareOptions {
+    grid-template-columns: 1fr;
+  }
+  
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .navButtons {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .primaryBtn, .secondaryBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .stepContent {
+    padding: 20px;
+  }
+  
+  .bookingSummary {
+    padding: 16px;
+  }
+  
+  .passengerForm {
+    padding: 16px;
+  }
+  
+  .fareOption {
+    padding: 16px;
+  }
+}
+
+/* Passenger Selection Step */
+.passengerSelection h3 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 16px 0;
+}
+
+.selectionInfo {
+  color: #6b7280;
+  margin-bottom: 32px;
+  font-size: 16px;
+}
+
+.passengerCounter {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.counterGroup {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.counterInfo h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.counterInfo p {
+  color: #6b7280;
+  font-size: 14px;
+  margin: 0;
+}
+
+.counterControls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.counterBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #3b82f6;
+  background: white;
+  color: #3b82f6;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.counterBtn:hover:not(:disabled) {
+  background: #3b82f6;
+  color: white;
+}
+
+.counterBtn:disabled {
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.counterValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  min-width: 40px;
+  text-align: center;
+}
+
+.passengerSummary {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+}
+
+.passengerSummary .summaryItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.passengerSummary .summaryItem span:first-child {
+  color: #111827;
+}
+
+.passengerSummary .summaryItem span:last-child {
+  color: #059669;
+  font-size: 18px;
+}
+
+/* Auto-fill Hint */
+.autoFillHint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #3b82f6;
+  font-size: 13px;
+  background: #eff6ff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #c7d2fe;
+  margin-top: 8px;
+}
+
+.autoFillHint span {
+  font-style: italic;
+}

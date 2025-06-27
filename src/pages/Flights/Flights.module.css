@@ -1,0 +1,280 @@
+.flightsPage {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+.searchSummary {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.routeInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.routeArrow {
+  color: #3b82f6;
+  font-size: 1.5rem;
+}
+
+.modifyBtn {
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.modifyBtn:hover {
+  background: #2563eb;
+}
+
+.flightsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.flightCard {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.flightCard:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.flightHeader {
+  padding: 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.flightInfo {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  gap: 2rem;
+  align-items: center;
+}
+
+.timeInfo {
+  text-align: center;
+}
+
+.time {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #111827;
+}
+
+.airport {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.flightRoute {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.duration {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.routeLine {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right, #3b82f6, #60a5fa);
+  position: relative;
+}
+
+.routeLine::after {
+  content: '✈️';
+  position: absolute;
+  right: -10px;
+  top: -8px;
+  font-size: 1rem;
+}
+
+.airline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.airlineLogo {
+  font-size: 1.5rem;
+}
+
+.flightDetails {
+  padding: 1rem 1.5rem;
+  background: #f9fafb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.priceSection {
+  text-align: right;
+}
+
+.price {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.priceLabel {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.selectBtn {
+  padding: 0.75rem 2rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.selectBtn:hover {
+  background: #059669;
+}
+
+.noFlights {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.noFlightsIcon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.noFlightsTitle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.noFlightsText {
+  color: #6b7280;
+  margin-bottom: 2rem;
+}
+
+.searchAgainBtn {
+  padding: 0.75rem 2rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: background-color 0.2s;
+}
+
+.searchAgainBtn:hover {
+  background: #2563eb;
+}
+
+.filters {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.filtersTitle {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.filterGroup {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filterSelect {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+@media (max-width: 768px) {
+  .flightsPage {
+    padding: 1rem;
+  }
+  
+  .searchSummary {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  
+  .flightInfo {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .flightDetails {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .filterGroup {
+    flex-direction: column;
+  }
+}

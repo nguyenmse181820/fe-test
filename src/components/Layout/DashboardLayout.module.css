@@ -1,0 +1,49 @@
+.dashboardLayout {
+  display: flex;
+  min-height: 100vh;
+  background: #f9fafb;
+}
+
+.content {
+  flex: 1;
+  margin-left: 250px;
+  padding: 2rem;
+  transition: margin-left 0.3s ease;
+}
+
+.header {
+  background: white;
+  padding: 1.5rem 2rem;
+  margin: -2rem -2rem 2rem -2rem;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pageTitle {
+  font-size: 1.875rem;
+  font-weight: bold;
+  color: #111827;
+  margin: 0;
+}
+
+.pageSubtitle {
+  color: #6b7280;
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+  .content {
+    margin-left: 0;
+    padding: 1rem;
+  }
+  
+  .header {
+    margin: -1rem -1rem 1rem -1rem;
+    padding: 1rem;
+  }
+  
+  .pageTitle {
+    font-size: 1.5rem;
+  }
+}
