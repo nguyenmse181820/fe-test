@@ -45,6 +45,13 @@ axiosInstance.interceptors.response.use(
         case 500:
           console.error('Server error');
           break;
+        case 503:
+          console.error('Service unavailable - this may be due to the service being temporarily overloaded');
+          // For booking operations, don't auto-redirect, let the component handle the retry
+          if (error.config.url.includes('/bookings') && error.config.method === 'post') {
+            console.warn('Booking operation in progress, may need retrying');
+          }
+          break;
         default:
           console.error('An error occurred:', error.response.data);
       }
@@ -53,6 +60,12 @@ axiosInstance.interceptors.response.use(
     } else {
       console.error('Error sending request:', error.message);
     }
+    
+    // If it's a timeout error, add a clearer message
+    if (error.code === 'ECONNABORTED') {
+      error.friendlyMessage = 'The request took too long to complete. The operation might still be processing.';
+    }
+    
     return Promise.reject(error);
   }
 );

@@ -1,8 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../utils/axios';
-import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
-import styles from './FlightList.module.css';
+import { 
+  formatTimeWithTimezone, 
+  formatDateWithTimezone, 
+  getMultiTimezoneDisplay, 
+  getUserTimezone,
+  getTimezoneAbbreviation,
+  parseBackendDateTime
+} from '../../../utils/timezone';
+import { 
+  AlertCircle, 
+  Check, 
+  ChevronLeft, 
+  ChevronRight, 
+  Clock, 
+  Info,
+  Loader2, 
+  Plane, 
+  Search, 
+  SortAsc, 
+  SortDesc, 
+  X
+} from 'lucide-react';
+
+// Shadcn components
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const FlightList = () => {
   const navigate = useNavigate();
@@ -94,7 +124,8 @@ const FlightList = () => {
           }
         }
       });
-
+      
+      // This endpoint matches the one in FlightController.java
       const response = await axiosInstance.get(`/flight-service/api/v1/fs/flights?${params.toString()}`);
       
       if (response.data.statusCode === 200) {
@@ -192,157 +223,222 @@ const FlightList = () => {
     return `${h}h ${m}m`;
   };  const renderDetailsModal = () => {
     return (
-      <Dialog
-        open={detailsModalOpen}
-        onClose={() => {
+      <Dialog open={detailsModalOpen} onOpenChange={isOpen => {
+        if (!isOpen) {
           setDetailsModalOpen(false);
           setFlightDetails(null);
           setDetailsError(null);
-        }}
-        className="relative z-50"
-      >
-        {/* Backdrop */}
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-        
-        {/* Full-screen container to center the panel */}
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          {/* The actual dialog panel */}
-          <DialogPanel className="mx-auto max-w-4xl rounded bg-white p-6 shadow-lg max-h-[90vh] overflow-y-auto">
-            <DialogTitle className="text-xl font-semibold text-gray-900 mb-6">
-              Flight Details
-            </DialogTitle>
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Flight Details</DialogTitle>
+            <DialogDescription>
+              Detailed information about the selected flight.
+            </DialogDescription>
+          </DialogHeader>
             
-            {detailsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className={styles.spinner}></div>
-                <span className="ml-3">Loading flight details...</span>
-              </div>
-            ) : detailsError ? (
-              <div className="text-red-600 py-4">
+          {detailsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-2" />
+              <span>Loading flight details...</span>
+            </div>
+          ) : detailsError ? (
+            <div className="bg-red-50 border border-red-200 rounded-md p-4 text-red-600">
+              <div className="flex items-center">
+                <AlertCircle className="h-5 w-5 mr-2" />
                 <p>Error: {detailsError}</p>
               </div>
-            ) : flightDetails ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Basic Flight Information */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Flight Information</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <strong>Flight Code:</strong>
-                      <span>{flightDetails.flightCode}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <strong>Status:</strong>
-                      <span className="capitalize px-2 py-1 rounded text-sm bg-blue-100 text-blue-800">
-                        {flightDetails.status.replace(/_/g, ' ').toLowerCase()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <strong>Duration:</strong>
-                      <span>{formatDuration(flightDetails.flightDurationMinutes)}</span>
-                    </div>
+            </div>
+          ) : flightDetails ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Basic Flight Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium border-b pb-2">Flight Information</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <strong>Flight Code:</strong>
+                    <span>{flightDetails.flightCode}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <strong>Status:</strong>
+                    <span className="capitalize px-2 py-1 rounded text-sm bg-blue-100 text-blue-800">
+                      {flightDetails.status.replace(/_/g, ' ').toLowerCase()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <strong>Duration:</strong>
+                    <span>{formatDuration(flightDetails.flightDurationMinutes)}</span>
                   </div>
                 </div>
+              </div>
 
-                {/* Aircraft Information */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Aircraft</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <strong>Aircraft Code:</strong>
-                      <span>{flightDetails.aircraft.code}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <strong>Model:</strong>
-                      <span>{flightDetails.aircraft.model}</span>
-                    </div>
+              {/* Aircraft Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium border-b pb-2">Aircraft</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <strong>Aircraft Code:</strong>
+                    <span>{flightDetails.aircraft.code}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <strong>Model:</strong>
+                    <span>{flightDetails.aircraft.model}</span>
                   </div>
                 </div>
+              </div>
 
-                {/* Origin Airport */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Origin</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <strong>Airport:</strong>
-                      <span>{flightDetails.originAirport.name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <strong>Code:</strong>
-                      <span>{flightDetails.originAirport.code}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <strong>City:</strong>
-                      <span>{flightDetails.originAirport.city}, {flightDetails.originAirport.country}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <strong>Departure:</strong>
-                      <span>{new Date(flightDetails.departureTime).toLocaleString()}</span>
-                    </div>
+              {/* Origin Airport */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium border-b pb-2">Origin</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <strong>Airport:</strong>
+                    <span>{flightDetails.originAirport.name}</span>
                   </div>
-                </div>
-
-                {/* Destination Airport */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Destination</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <strong>Airport:</strong>
-                      <span>{flightDetails.destinationAirport.name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <strong>Code:</strong>
-                      <span>{flightDetails.destinationAirport.code}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <strong>City:</strong>
-                      <span>{flightDetails.destinationAirport.city}, {flightDetails.destinationAirport.country}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <strong>Estimated Arrival:</strong>
-                      <span>{new Date(flightDetails.estimatedArrivalTime).toLocaleString()}</span>
-                    </div>
-                    {flightDetails.actualArrivalTime && (
-                      <div className="flex justify-between">
-                        <strong>Actual Arrival:</strong>
-                        <span>{new Date(flightDetails.actualArrivalTime).toLocaleString()}</span>
+                  <div className="flex justify-between">
+                    <strong>Code:</strong>
+                    <span>{flightDetails.originAirport.code}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <strong>City:</strong>
+                    <span>{flightDetails.originAirport.city}, {flightDetails.originAirport.country}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <strong>Departure:</strong>
+                    {flightDetails.originAirport?.timezone ? (
+                      <div className="ml-4 space-y-1 text-sm">
+                        {(() => {
+                          const timezones = getMultiTimezoneDisplay(
+                            flightDetails.departureTime, 
+                            flightDetails.originAirport.timezone, 
+                            flightDetails.destinationAirport?.timezone || 'UTC'
+                          );
+                          return (
+                            <>
+                              <div className="font-medium">{timezones.user.label}: {timezones.user.time}</div>
+                              <div className="text-gray-600">{timezones.utc.label}: {timezones.utc.time}</div>
+                              <div className="text-gray-600">{timezones.origin.label}: {timezones.origin.time}</div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <div className="ml-4 space-y-1 text-sm">
+                        <div className="font-medium">Your time: {formatTimeWithTimezone(flightDetails.departureTime, getUserTimezone(), true)}</div>
+                        <div className="text-gray-600">UTC: {formatTimeWithTimezone(flightDetails.departureTime, 'UTC', true)}</div>
                       </div>
                     )}
                   </div>
                 </div>
+              </div>
 
-                {/* Seat Information - Commented out due to potential data inconsistency */}
-                {/* Note: Seat availability may not reflect real-time updates immediately after bookings */}
-                {false && (
-                <div className="space-y-4 lg:col-span-2">
-                  <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Seat Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-gray-50 rounded">
-                      <div className="text-2xl font-bold text-blue-600">{flightDetails.totalSeats}</div>
-                      <div className="text-sm text-gray-600">Total Seats</div>
+              {/* Destination Airport */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium border-b pb-2">Destination</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <strong>Airport:</strong>
+                    <span>{flightDetails.destinationAirport.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <strong>Code:</strong>
+                    <span>{flightDetails.destinationAirport.code}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <strong>City:</strong>
+                    <span>{flightDetails.destinationAirport.city}, {flightDetails.destinationAirport.country}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <strong>Estimated Arrival:</strong>
+                    {flightDetails.destinationAirport?.timezone ? (
+                      <div className="ml-4 space-y-1 text-sm">
+                        {(() => {
+                          const timezones = getMultiTimezoneDisplay(
+                            flightDetails.estimatedArrivalTime, 
+                            flightDetails.originAirport?.timezone || 'UTC', 
+                            flightDetails.destinationAirport.timezone
+                          );
+                          return (
+                            <>
+                              <div className="font-medium">{timezones.user.label}: {timezones.user.time}</div>
+                              <div className="text-gray-600">{timezones.utc.label}: {timezones.utc.time}</div>
+                              <div className="text-gray-600">{timezones.destination.label}: {timezones.destination.time}</div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <div className="ml-4 space-y-1 text-sm">
+                        <div className="font-medium">Your time: {formatTimeWithTimezone(flightDetails.estimatedArrivalTime, getUserTimezone(), true)}</div>
+                        <div className="text-gray-600">UTC: {formatTimeWithTimezone(flightDetails.estimatedArrivalTime, 'UTC', true)}</div>
+                      </div>
+                    )}
+                  </div>
+                  {flightDetails.actualArrivalTime && (
+                    <div className="space-y-2">
+                      <strong>Actual Arrival:</strong>
+                      {flightDetails.destinationAirport?.timezone ? (
+                        <div className="ml-4 space-y-1 text-sm">
+                          {(() => {
+                            const timezones = getMultiTimezoneDisplay(
+                              flightDetails.actualArrivalTime, 
+                              flightDetails.originAirport?.timezone || 'UTC', 
+                              flightDetails.destinationAirport.timezone
+                            );
+                            return (
+                              <>
+                                <div className="font-medium">{timezones.user.label}: {timezones.user.time}</div>
+                                <div className="text-gray-600">{timezones.utc.label}: {timezones.utc.time}</div>
+                                <div className="text-gray-600">{timezones.destination.label}: {timezones.destination.time}</div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      ) : (
+                        <div className="ml-4 space-y-1 text-sm">
+                          <div className="font-medium">Your time: {formatTimeWithTimezone(flightDetails.actualArrivalTime, getUserTimezone(), true)}</div>
+                          <div className="text-gray-600">UTC: {formatTimeWithTimezone(flightDetails.actualArrivalTime, 'UTC', true)}</div>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-center p-4 bg-gray-50 rounded">
-                      <div className="text-2xl font-bold text-green-600">{flightDetails.remainingSeats}</div>
-                      <div className="text-sm text-gray-600">Available Seats</div>
-                    </div>
-                    <div className="text-center p-4 bg-gray-50 rounded">
-                      <div className="text-2xl font-bold text-red-600">{flightDetails.totalSeats - flightDetails.remainingSeats}</div>
-                      <div className="text-sm text-gray-600">Occupied Seats</div>
-                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Seat Information - Commented out due to potential data inconsistency */}
+              {/* Note: Seat availability may not reflect real-time updates immediately after bookings */}
+              {false && (
+              <div className="space-y-4 lg:col-span-2">
+                <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Seat Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 bg-gray-50 rounded">
+                    <div className="text-2xl font-bold text-blue-600">{flightDetails.totalSeats}</div>
+                    <div className="text-sm text-gray-600">Total Seats</div>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded">
+                    <div className="text-2xl font-bold text-green-600">{flightDetails.remainingSeats}</div>
+                    <div className="text-sm text-gray-600">Available Seats</div>
+                  </div>
+                  <div className="text-center p-4 bg-gray-50 rounded">
+                    <div className="text-2xl font-bold text-red-600">{flightDetails.totalSeats - flightDetails.remainingSeats}</div>
+                    <div className="text-sm text-gray-600">Occupied Seats</div>
                   </div>
                 </div>
-                )}
+              </div>
+              )}
 
-                {/* Available Fares */}
-                {flightDetails.availableFares && flightDetails.availableFares.length > 0 && (
-                  <div className="space-y-4 lg:col-span-2">
-                    <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Available Fares</h3>
-                    <div className="space-y-3">
-                      {flightDetails.availableFares.map((fare, index) => (
-                        <div key={fare.id} className="p-4 border rounded-lg bg-gray-50">
+              {/* Available Fares */}
+              {flightDetails.availableFares && flightDetails.availableFares.length > 0 && (
+                <div className="space-y-4 lg:col-span-2">
+                  <h3 className="text-lg font-medium border-b pb-2">Available Fares</h3>
+                  <div className="space-y-3">
+                    {flightDetails.availableFares.map((fare, index) => (
+                      <Card key={fare.id}>
+                        <CardContent className="pt-6">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <h4 className="font-medium text-gray-900">{fare.name}</h4>
+                              <h4 className="font-medium">{fare.name}</h4>
                               <div className="mt-2 space-y-1 text-sm">
                                 <div>Price Range: ${fare.minPrice} - ${fare.maxPrice}</div>
                                 <div>Total Seats: {fare.totalSeats}</div>
@@ -359,61 +455,67 @@ const FlightList = () => {
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
-                )}
-              </div>
-            ) : selectedFlight ? (
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <strong>Code:</strong> 
-                  <span>{selectedFlight.code}</span>
                 </div>
-                <div className="flex justify-between">
-                  <strong>Origin:</strong> 
-                  <span>{typeof selectedFlight.origin === 'object' ? (selectedFlight.origin.code || selectedFlight.origin.name) : selectedFlight.origin}</span>
-                </div>
-                <div className="flex justify-between">
-                  <strong>Destination:</strong> 
-                  <span>{typeof selectedFlight.destination === 'object' ? (selectedFlight.destination.code || selectedFlight.destination.name) : selectedFlight.destination}</span>
-                </div>
-                <div className="flex justify-between">
-                  <strong>Departure:</strong> 
-                  <span>{new Date(selectedFlight.departureTime).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <strong>Arrival:</strong> 
-                  <span>{new Date(selectedFlight.estimatedArrivalTime).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <strong>Duration:</strong> 
-                  <span>{formatDuration(selectedFlight.flightDurationMinutes)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <strong>Status:</strong> 
-                  <span className="capitalize">{selectedFlight.status.replace(/_/g, ' ').toLowerCase()}</span>
-                </div>
-              </div>
-            ) : (
-              <div>No flight data available</div>
-            )}
-            
-            <div className="mt-6 flex justify-end border-t pt-4">
-              <button 
-                onClick={() => {
-                  setDetailsModalOpen(false);
-                  setFlightDetails(null);
-                  setDetailsError(null);
-                }} 
-                className="px-6 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-              >
-                Close
-              </button>
+              )}
             </div>
-          </DialogPanel>
-        </div>
+          ) : selectedFlight ? (
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <strong>Code:</strong> 
+                <span>{selectedFlight.code}</span>
+              </div>
+              <div className="flex justify-between">
+                <strong>Origin:</strong> 
+                <span>{typeof selectedFlight.origin === 'object' ? (selectedFlight.origin.code || selectedFlight.origin.name) : selectedFlight.origin}</span>
+              </div>
+              <div className="flex justify-between">
+                <strong>Destination:</strong> 
+                <span>{typeof selectedFlight.destination === 'object' ? (selectedFlight.destination.code || selectedFlight.destination.name) : selectedFlight.destination}</span>
+              </div>
+              <div className="space-y-2">
+                <strong>Departure:</strong> 
+                <div className="ml-4 space-y-1 text-sm">
+                  <div className="font-medium">Your time: {formatTimeWithTimezone(selectedFlight.departureTime, getUserTimezone(), true)}</div>
+                  <div className="text-gray-600">UTC: {formatTimeWithTimezone(selectedFlight.departureTime, 'UTC', true)}</div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <strong>Arrival:</strong> 
+                <div className="ml-4 space-y-1 text-sm">
+                  <div className="font-medium">Your time: {formatTimeWithTimezone(selectedFlight.estimatedArrivalTime, getUserTimezone(), true)}</div>
+                  <div className="text-gray-600">UTC: {formatTimeWithTimezone(selectedFlight.estimatedArrivalTime, 'UTC', true)}</div>
+                </div>
+              </div>
+              <div className="flex justify-between">
+                <strong>Duration:</strong> 
+                <span>{formatDuration(selectedFlight.flightDurationMinutes)}</span>
+              </div>
+              <div className="flex justify-between">
+                <strong>Status:</strong> 
+                <span className="capitalize">{selectedFlight.status.replace(/_/g, ' ').toLowerCase()}</span>
+              </div>
+            </div>
+          ) : (
+            <div>No flight data available</div>
+          )}
+            
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setDetailsModalOpen(false);
+                setFlightDetails(null);
+                setDetailsError(null);
+              }}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     );
   };
@@ -421,216 +523,298 @@ const FlightList = () => {
   // Add getSortIcon helper
   const getSortIcon = (field) => {
     const [currentField, currentDirection] = sortBy.split(':');
-    if (currentField !== field) return '↕️';
-    return currentDirection === 'asc' ? '↑' : '↓';
+    if (currentField !== field) {
+      return null;
+    }
+    return currentDirection === 'asc' ? (
+      <SortAsc className="inline h-4 w-4 ml-1" />
+    ) : (
+      <SortDesc className="inline h-4 w-4 ml-1" />
+    );
   };
 
   if (loading) {
     return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.spinner}></div>
-        <p>Loading flights...</p>
+      <div className="flex flex-col items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+        <p className="text-gray-600">Loading flights...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={styles.errorContainer}>
-        <p className={styles.errorMessage}>{error}</p>
-        <button onClick={fetchFlights} className={styles.retryButton}>
-          Retry
-        </button>
-      </div>
+      <Card className="mx-auto max-w-md p-6 my-8">
+        <CardHeader>
+          <div className="flex items-center justify-center text-red-600 mb-2">
+            <AlertCircle className="h-8 w-8" />
+          </div>
+          <CardTitle className="text-center text-red-600">Error</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-center mb-4">{error}</p>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+          <Button onClick={fetchFlights} variant="outline">
+            Retry
+          </Button>
+        </CardFooter>
+      </Card>
     );
   }
   return (
-    <div className={styles.container}>
+    <div className="container mx-auto max-w-6xl p-6">
       {renderDetailsModal()}
       
-      <div className={styles.header}>
-        <h1>Flight Management</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Flight Management</h1>
         <div className="flex gap-2">
-          <button 
-            className={styles.createButton}
+          <Button
             onClick={() => navigate('/dashboard/flights/add')}
+            className="gap-2"
           >
+            <Plane className="h-4 w-4" />
             Create New Flight
-          </button>
-          <button
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => setShowSearchBar(!showSearchBar)}
+            className="gap-2"
           >
+            <Search className="h-4 w-4" />
             {showSearchBar ? 'Hide Search' : 'Show Search'}
-          </button>
+          </Button>
         </div>
       </div>
 
       {showSearchBar && (
-        <div className="bg-gray-50 p-4 rounded-lg mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-            <input
-              type="text"
-              name="code"
-              placeholder="Flight Code"
-              value={searchForm.code}
-              onChange={handleFilterChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="text"
-              name="origin"
-              placeholder="Origin Airport"
-              value={searchForm.origin}
-              onChange={handleFilterChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="text"
-              name="destination"
-              placeholder="Destination Airport"
-              value={searchForm.destination}
-              onChange={handleFilterChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <select
-              name="status"
-              value={searchForm.status}
-              onChange={handleFilterChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Statuses</option>
-              <option value="SCHEDULED_OPEN">Scheduled Open</option>
-              <option value="SCHEDULED_CLOSED">Scheduled Closed</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
-            <input
-              type="datetime-local"
-              placeholder="Start Date"
-              value={searchForm.startDate}
-              onChange={(e) => handleDateChange('startDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <input
-              type="datetime-local"
-              placeholder="End Date"
-              value={searchForm.endDate}
-              onChange={(e) => handleDateChange('endDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button 
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-              onClick={handleSearch}
-            >
-              Search
-            </button>
-            <button 
-              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500" 
-              onClick={handleClearSearch}
-            >
-              Clear
-            </button>
-          </div>
-        </div>
+        <Card className="mb-6">
+          <CardContent className="pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+              <div className="space-y-2">
+                <Label htmlFor="code">Flight Code</Label>
+                <Input
+                  id="code"
+                  name="code"
+                  placeholder="Flight Code"
+                  value={searchForm.code}
+                  onChange={handleFilterChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="origin">Origin Airport</Label>
+                <Input
+                  id="origin"
+                  name="origin"
+                  placeholder="Origin Airport"
+                  value={searchForm.origin}
+                  onChange={handleFilterChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="destination">Destination Airport</Label>
+                <Input
+                  id="destination"
+                  name="destination"
+                  placeholder="Destination Airport"
+                  value={searchForm.destination}
+                  onChange={handleFilterChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  value={searchForm.status} 
+                  onValueChange={(value) => handleFilterChange({ target: { name: 'status', value }})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Statuses" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Statuses</SelectItem>
+                    <SelectItem value="SCHEDULED_OPEN">Scheduled Open</SelectItem>
+                    <SelectItem value="SCHEDULED_CLOSED">Scheduled Closed</SelectItem>
+                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Start Date</Label>
+                <Input
+                  id="startDate"
+                  type="datetime-local"
+                  value={searchForm.startDate}
+                  onChange={(e) => handleDateChange('startDate', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="endDate">End Date</Label>
+                <Input
+                  id="endDate"
+                  type="datetime-local"
+                  value={searchForm.endDate}
+                  onChange={(e) => handleDateChange('endDate', e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <Button onClick={handleSearch}>
+                <Search className="h-4 w-4 mr-2" />
+                Search
+              </Button>
+              <Button variant="outline" onClick={handleClearSearch}>
+                <X className="h-4 w-4 mr-2" />
+                Clear
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      <div className={styles.tableContainer}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th onClick={() => handleSort('code')}>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('code')}>
                 Flight Code {getSortIcon('code')}
-              </th>
-              <th onClick={() => handleSort('origin')}>
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('origin')}>
                 Origin {getSortIcon('origin')}
-              </th>
-              <th onClick={() => handleSort('destination')}>
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('destination')}>
                 Destination {getSortIcon('destination')}
-              </th>
-              <th onClick={() => handleSort('departureTime')}>
-                Departure {getSortIcon('departureTime')}
-              </th>
-              <th onClick={() => handleSort('estimatedArrivalTime')}>
-                Arrival {getSortIcon('estimatedArrivalTime')}
-              </th>
-              <th onClick={() => handleSort('flightDurationMinutes')}>
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('departureTime')}>
+                Departure (Your Time) {getSortIcon('departureTime')}
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('estimatedArrivalTime')}>
+                Arrival (Your Time) {getSortIcon('estimatedArrivalTime')}
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('flightDurationMinutes')}>
                 Duration {getSortIcon('flightDurationMinutes')}
-              </th>
-              <th onClick={() => handleSort('status')}>
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('status')}>
                 Status {getSortIcon('status')}
-              </th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {flights.map((flight) => (
-              <tr key={flight.id}>
-                <td>{flight.code}</td>
-                <td>{typeof flight.origin === 'object' ? (flight.origin.code || flight.origin.name) : flight.origin}</td>
-                <td>{typeof flight.destination === 'object' ? (flight.destination.code || flight.destination.name) : flight.destination}</td>
-                <td>{new Date(flight.departureTime).toLocaleString()}</td>
-                <td>{new Date(flight.estimatedArrivalTime).toLocaleString()}</td>
-                <td>{formatDuration(flight.flightDurationMinutes)}</td>
-                <td>
-                  <span className={`${styles.statusBadge} ${styles[flight.status.toLowerCase()]}`}>
-                    {flight.status.replace(/_/g, ' ')}
-                  </span>
-                </td>                <td>
-                  <div className={styles.actionButtons}>
-                    <button
-                      onClick={() => handleViewDetails(flight)}
-                      className={styles.viewButton}
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={() => navigate(`/dashboard/flights/${flight.id}/edit`)}
-                      className={styles.editButton}
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              </TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {flights.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-4 text-gray-500">
+                  No flights found
+                </TableCell>
+              </TableRow>
+            ) : (
+              flights.map((flight) => (
+                <TableRow key={flight.id}>
+                  <TableCell>{flight.code}</TableCell>
+                  <TableCell>{typeof flight.origin === 'object' ? (flight.origin.code || flight.origin.name) : flight.origin}</TableCell>
+                  <TableCell>{typeof flight.destination === 'object' ? (flight.destination.code || flight.destination.name) : flight.destination}</TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="font-medium">
+                        {formatTimeWithTimezone(flight.departureTime, getUserTimezone(), true)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {formatDateWithTimezone(flight.departureTime, getUserTimezone())}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        UTC: {formatTimeWithTimezone(flight.departureTime, 'UTC', false)}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="font-medium">
+                        {formatTimeWithTimezone(flight.estimatedArrivalTime, getUserTimezone(), true)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {formatDateWithTimezone(flight.estimatedArrivalTime, getUserTimezone())}
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        UTC: {formatTimeWithTimezone(flight.estimatedArrivalTime, 'UTC', false)}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>{formatDuration(flight.flightDurationMinutes)}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded text-sm ${
+                      flight.status.includes("SCHEDULED") ? "bg-blue-100 text-blue-800" :
+                      flight.status.includes("IN_PROGRESS") ? "bg-yellow-100 text-yellow-800" :
+                      flight.status.includes("COMPLETED") ? "bg-green-100 text-green-800" :
+                      flight.status.includes("CANCELLED") ? "bg-red-100 text-red-800" :
+                      "bg-gray-100 text-gray-800"
+                    }`}>
+                      {flight.status.replace(/_/g, ' ')}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewDetails(flight)}
+                      >
+                        <Info className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/dashboard/flights/${flight.id}/edit`)}
+                      >
+                        Edit
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
 
-      <div className={styles.pagination}>
-        <div className={styles.pageSizeSelector}>
-          <label>Rows per page:</label>
-          <select value={pageSize} onChange={handlePageSizeChange}>
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-          </select>
+      <div className="flex items-center justify-between mt-6">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="pageSize">Rows per page:</Label>
+          <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange({ target: { value: Number(value) }})}>
+            <SelectTrigger className="w-20">
+              <SelectValue placeholder={pageSize} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="5">5</SelectItem>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         
-        <div className={styles.pageInfo}>
+        <div className="text-sm text-gray-600">
           Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalElements)} of {totalElements} entries
         </div>
 
-        <div className={styles.pageButtons}>
-          <button
+        <div className="flex gap-1">
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => handlePageChange(1)}
             disabled={currentPage === 1}
-            className={styles.pageButton}
           >
             First
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage === 1}
-            className={styles.pageButton}
           >
-            Previous
-          </button>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
           
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
             const pageNum = currentPage <= 3 
@@ -641,32 +825,35 @@ const FlightList = () => {
             
             if (pageNum > 0 && pageNum <= totalPages) {
               return (
-                <button
+                <Button
                   key={pageNum}
+                  size="sm"
+                  variant={currentPage === pageNum ? "default" : "outline"}
                   onClick={() => handlePageChange(pageNum)}
-                  className={`${styles.pageButton} ${currentPage === pageNum ? styles.activePage : ''}`}
                 >
                   {pageNum}
-                </button>
+                </Button>
               );
             }
             return null;
           })}
 
-          <button
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className={styles.pageButton}
           >
-            Next
-          </button>
-          <button
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => handlePageChange(totalPages)}
             disabled={currentPage === totalPages}
-            className={styles.pageButton}
           >
             Last
-          </button>
+          </Button>
         </div>
       </div>
     </div>

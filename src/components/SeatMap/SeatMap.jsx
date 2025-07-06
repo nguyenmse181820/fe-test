@@ -11,47 +11,42 @@ const SeatMap = ({
   onSeatSelect, 
   seatPrices = {},
   selectedFareClass = 'economy',
-  disabled = false 
+  disabled = false,
+  allowFlexibleSelection = true, // New prop to allow seat selection across all fare classes
+  flightDetails = null // Flight details containing fare pricing
 }) => {
   const [seatMap, setSeatMap] = useState(null);
   const [occupiedSeats, setOccupiedSeats] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedSeatClass, setSelectedSeatClass] = useState(selectedFareClass); // Track which class user is selecting from
 
-  // Convert seat sections API response to SeatMap format
   const convertSeatSectionsToSeatMap = (seatSections) => {
     const sections = [];
     
-    // Define section order and properties
     const sectionConfig = {
-      'first': { name: 'First Class', color: '#8B5CF6', layout: '2-2' },
-      'business': { name: 'Business Class', color: '#3B82F6', layout: '2-2' }, 
-      'economy': { name: 'Economy Class', color: '#10B981', layout: '3-3' }
+      'FIRST_CLASS': { name: 'First Class', color: '#8B5CF6', layout: '2-2', frontendKey: 'first' },
+      'BUSINESS': { name: 'Business Class', color: '#3B82F6', layout: '2-2', frontendKey: 'business' }, 
+      'ECONOMY': { name: 'Economy Class', color: '#10B981', layout: '3-3', frontendKey: 'economy' }
     };
     
-    // Process sections in a specific order
-    const orderedClasses = ['first', 'business', 'economy'];
-    
-    console.log('SeatMap - Available seat sections:', Object.keys(seatSections));
+    const availableApiKeys = Object.keys(seatSections);
+    console.log('SeatMap - Available seat sections from API:', availableApiKeys);
     console.log('SeatMap - Full seat sections data:', seatSections);
     
-    orderedClasses.forEach(className => {
-      const seats = seatSections[className];
-      console.log(`SeatMap - Processing ${className} class:`, seats);
+    const orderedApiKeys = ['FIRST_CLASS', 'BUSINESS', 'ECONOMY'].filter(key => availableApiKeys.includes(key));
+    
+    orderedApiKeys.forEach(apiKey => {
+      const seats = seatSections[apiKey];
+      const config = sectionConfig[apiKey];
       
       if (seats && seats.length > 0) {
-        const config = sectionConfig[className] || 
-                      { name: className.charAt(0).toUpperCase() + className.slice(1), color: '#6B7280', layout: '3-3' };
-        
-        // Group seats by row number
         const rowMap = {};
         seats.forEach(seatCode => {
-          console.log(`SeatMap - Processing seat code: ${seatCode}`);
           const rowMatch = seatCode.match(/(\d+)([A-Z])/);
           if (rowMatch) {
             const rowNum = parseInt(rowMatch[1]);
             const seatLetter = rowMatch[2];
-            console.log(`SeatMap - Parsed seat: row=${rowNum}, letter=${seatLetter}`);
             
             if (!rowMap[rowNum]) {
               rowMap[rowNum] = [];
@@ -62,9 +57,6 @@ const SeatMap = ({
           }
         });
         
-        console.log(`SeatMap - Row map for ${className}:`, rowMap);
-        
-        // Convert to rows format with proper spacing for aisles
         const rows = Object.entries(rowMap)
           .sort(([a], [b]) => parseInt(a) - parseInt(b))
           .map(([rowNum, seatCodes]) => {
@@ -74,13 +66,10 @@ const SeatMap = ({
               return letterA.localeCompare(letterB);
             });
             
-            // Add aisle spacing based on layout
             let formattedSeats = [...sortedSeats];
             if (config.layout === '3-3' && sortedSeats.length >= 3) {
-              // Insert aisle after 3rd seat for economy
               formattedSeats.splice(3, 0, '');
             } else if (config.layout === '2-2' && sortedSeats.length >= 2) {
-              // Insert aisle after 2nd seat for first/business
               formattedSeats.splice(2, 0, '');
             }
             
@@ -91,7 +80,64 @@ const SeatMap = ({
           });
         
         sections.push({
-          class: className,
+          class: config.frontendKey,
+          name: config.name,
+          rows: rows,
+          layout: config.layout,
+          color: config.color
+        });
+      } else {
+        console.log(`SeatMap - No seats found for ${apiKey} class`);
+      }
+    });
+    
+    const unhandledKeys = availableApiKeys.filter(key => !['FIRST_CLASS', 'BUSINESS', 'ECONOMY'].includes(key));
+    unhandledKeys.forEach(apiKey => {
+      const seats = seatSections[apiKey];
+      console.log(`SeatMap - Processing unknown fare class ${apiKey}:`, seats);
+      
+      if (seats && seats.length > 0) {
+        const config = {
+          name: apiKey.charAt(0).toUpperCase() + apiKey.slice(1).toLowerCase().replace('_', ' '),
+          color: '#6B7280',
+          layout: '3-3',
+          frontendKey: apiKey.toLowerCase()
+        };
+        
+        const rowMap = {};
+        seats.forEach(seatCode => {
+          const rowMatch = seatCode.match(/(\d+)([A-Z])/);
+          if (rowMatch) {
+            const rowNum = parseInt(rowMatch[1]);
+            if (!rowMap[rowNum]) {
+              rowMap[rowNum] = [];
+            }
+            rowMap[rowNum].push(seatCode);
+          }
+        });
+        
+        const rows = Object.entries(rowMap)
+          .sort(([a], [b]) => parseInt(a) - parseInt(b))
+          .map(([rowNum, seatCodes]) => {
+            const sortedSeats = seatCodes.sort((a, b) => {
+              const letterA = a.match(/[A-Z]/)[0];
+              const letterB = b.match(/[A-Z]/)[0];
+              return letterA.localeCompare(letterB);
+            });
+            
+            let formattedSeats = [...sortedSeats];
+            if (config.layout === '3-3' && sortedSeats.length >= 3) {
+              formattedSeats.splice(3, 0, '');
+            }
+            
+            return {
+              number: parseInt(rowNum),
+              seats: formattedSeats
+            };
+          });
+        
+        sections.push({
+          class: config.frontendKey,
           name: config.name,
           rows: rows,
           layout: config.layout,
@@ -99,7 +145,6 @@ const SeatMap = ({
         });
       }
     });
-    
     return { sections };
   };
 
@@ -109,30 +154,17 @@ const SeatMap = ({
       setError(null);
       
       try {
-        console.log('SeatMap - Fetching real data for aircraft:', aircraftId, 'flight:', flightId);
-        
-        // Get seat sections from aircraft service
         const seatSectionsResponse = await axiosInstance.get(`/flight-service/api/v1/fs/aircraft/${aircraftId}/seat-sections`);
         const seatSectionsData = seatSectionsResponse.data;
         
-        console.log('SeatMap - Seat sections response:', seatSectionsData);
-        
-        // Get flight details to get occupied seats
         const flightResponse = await axiosInstance.get(`/flight-service/api/v1/fs/flights/${flightId}/details`);
         const flightData = flightResponse.data;
         
-        console.log('SeatMap - Flight details response:', flightData);
-        
-        // Convert seat sections to seat map format
         const convertedSeatMap = convertSeatSectionsToSeatMap(seatSectionsData.seatSections);
         setSeatMap(convertedSeatMap);
         
-        // Set occupied seats from real flight data
         const occupiedSeatsList = flightData.occupiedSeats || [];
         setOccupiedSeats(new Set(occupiedSeatsList));
-        
-        console.log('SeatMap - Converted seat map:', convertedSeatMap);
-        console.log('SeatMap - Occupied seats:', occupiedSeatsList);
         
         setLoading(false);
       } catch (err) {
@@ -158,48 +190,193 @@ const SeatMap = ({
   };
 
   const getSeatPrice = (seatCode, seatClass) => {
-    return seatPrices[seatClass] || 0;
+  // Use the flightDetails prop which contains the correct data for the current flight tab.
+  if (!flightDetails?.availableFares) {
+    return 0; // Return 0 if no fare data is available
+  }
+
+  // Map the frontend class key (e.g., 'first') to the backend fare type (e.g., 'FIRST_CLASS')
+  const fareTypeMap = {
+    'first': 'FIRST_CLASS',
+    'business': 'BUSINESS',
+    'economy': 'ECONOMY',
   };
+
+  const targetFareType = fareTypeMap[seatClass];
+
+  // If the class is unknown, there is no price.
+  if (!targetFareType) {
+    return 0;
+  }
+
+  // Find the fare object that exactly matches the target fare type.
+  const matchingFare = flightDetails.availableFares.find(
+    (fare) => fare.fareType === targetFareType
+  );
+
+  // Return the price of the matched fare, or 0 if no match was found.
+  return matchingFare?.price || 0;
+};
+  // Allow seat selection across all classes
   const handleSeatClick = (seatCode, seatClass) => {
     if (disabled || occupiedSeats.has(seatCode)) return;
-
-    // Only allow selection of seats in the selected fare class
-    if (seatClass !== selectedFareClass) {
-      return;
-    }
-
-    const isSelected = selectedSeats.includes(seatCode);
     
-    if (isSelected) {
-      // Deselect seat
-      onSeatSelect(selectedSeats.filter(seat => seat !== seatCode));
+    // Toggle selection
+    if (selectedSeats.includes(seatCode)) {
+      onSeatSelect(selectedSeats.filter(s => s !== seatCode));
     } else {
-      // Select seat (check if we can add more)
-      if (selectedSeats.length < passengerCount) {
+      // If we already have selected the maximum number of seats, replace the last one
+      if (selectedSeats.length >= passengerCount) {
+        const newSelectedSeats = [...selectedSeats];
+        newSelectedSeats.pop(); // Remove the last seat
+        newSelectedSeats.push(seatCode); // Add the new one
+        onSeatSelect(newSelectedSeats);
+      } else {
         onSeatSelect([...selectedSeats, seatCode]);
       }
+      
+      // Update selected seat class for UI feedback
+      setSelectedSeatClass(seatClass);
     }
   };
+
+  // Helper function to get fare info for a seat
+  const getSeatFareInfo = (seatCode) => {
+    // Find which section this seat belongs to
+    if (!seatMap) return null;
+    
+    // First, check if we can find the exact seat class from the aircraft data
+    let exactSeatClass = null;
+    let exactSeatType = null;
+    
+    if (flightDetails?.aircraft?.seatSections) {
+      for (const [className, seats] of Object.entries(flightDetails.aircraft.seatSections)) {
+        if (Array.isArray(seats) && seats.includes(seatCode)) {
+          exactSeatClass = className;
+          
+          // Map to frontend class name
+          if (className === 'FIRST_CLASS') exactSeatType = 'first';
+          else if (className === 'BUSINESS') exactSeatType = 'business';
+          else if (className === 'ECONOMY') exactSeatType = 'economy';
+          else exactSeatType = className.toLowerCase();
+          
+          break;
+        }
+      }
+    }
+    
+    // If we found the exact seat class from aircraft data
+    if (exactSeatClass) {
+      const seatPrice = getSeatPrice(seatCode, exactSeatType || 'economy');
+      let fareInfo = null;
+      
+      // Try to get actual fare info from flight details
+      if (flightDetails?.availableFares) {
+        fareInfo = flightDetails.availableFares.find(fare => 
+          fare.fareType === exactSeatClass || 
+          fare.name.toUpperCase().includes(exactSeatClass)
+        );
+      }
+      
+      console.log(`Found exact seat class for ${seatCode}: ${exactSeatClass}, Price: ${seatPrice}`);
+      
+      return {
+        name: fareInfo?.name || exactSeatClass.replace('_', ' ').toLowerCase(),
+        class: exactSeatType || 'economy',
+        price: seatPrice,
+        fareType: exactSeatClass
+      };
+    }
+    
+    // Fallback to section-based approach
+    for (const section of seatMap.sections) {
+      for (const row of section.rows) {
+        if (row.seats.includes(seatCode)) {
+          const seatPrice = getSeatPrice(seatCode, section.class);
+          
+          // Map frontend class to backend fare type
+          const fareClassMap = {
+            'first': 'FIRST_CLASS',
+            'business': 'BUSINESS',
+            'economy': 'ECONOMY'
+          };
+          
+          const fareType = fareClassMap[section.class] || section.class.toUpperCase();
+          let fareInfo = null;
+          
+          // Try to get actual fare info from flight details
+          if (flightDetails?.availableFares) {
+            fareInfo = flightDetails.availableFares.find(fare => 
+              fare.fareType === fareType || fare.name.toLowerCase().includes(section.class)
+            );
+          }
+          
+          return {
+            name: fareInfo?.name || section.name,
+            class: section.class,
+            price: seatPrice,
+            fareType: fareType
+          };
+        }
+      }
+    }
+    return null;
+  };
+
+  const handleRemoveSeat = (seatCode) => {
+    const newSelectedSeats = selectedSeats.filter(seat => seat !== seatCode);
+    const newSeatDetails = newSelectedSeats.map(seat => ({
+        seatCode: seat,
+        fare: getSeatFareInfo(seat)
+    }));
+    onSeatSelect(newSelectedSeats, newSeatDetails);
+  };
+
+  const renderSeatButton = (seatCode, seatClass, seatIndex) => {
+    if (!seatCode) return <div className={styles.spacer} key={`spacer-${seatIndex}`} />;
+    
+    const status = getSeatStatus(seatCode);
+    const price = getSeatPrice(seatCode, seatClass);
+    const isAvailableForSelection = status === 'available';
+    
+    return (
+      <button
+        key={seatCode}
+        className={`${styles.seat} ${styles[status]} ${styles[seatClass]}`}
+        disabled={!isAvailableForSelection || disabled}
+        onClick={() => isAvailableForSelection && handleSeatClick(seatCode, seatClass)}
+        title={`Seat ${seatCode}${price ? ` - ${price.toLocaleString('vi-VN')} VND` : ''}`}
+        aria-label={`Seat ${seatCode}, ${status}`}
+      >
+        {seatCode.match(/[A-Z]/)[0]}
+      </button>
+    );
+  };
+
   const renderSeat = (seatCode, seatClass) => {
     if (!seatCode) return <div key={Math.random()} className={styles.emptySeat}></div>;
 
     const status = getSeatStatus(seatCode);
     const price = getSeatPrice(seatCode, seatClass);
-    const isAvailableForSelection = seatClass === selectedFareClass;
-    const isDisabled = disabled || status === 'occupied' || !isAvailableForSelection;
+    const isAvailableForSelection = allowFlexibleSelection || seatClass === selectedFareClass;
+    const isDisabled = disabled || status === 'occupied';
+    
+    // Different styling for seats that are not in the user's original fare class
+    const isPremiumSeat = seatClass !== selectedFareClass && allowFlexibleSelection;
     
     return (
       <button
         key={seatCode}
-        className={`${styles.seat} ${styles[status]} ${styles[seatClass]} ${!isAvailableForSelection ? styles.notAvailable : ''}`}
+        className={`${styles.seat} ${styles[status]} ${styles[seatClass]} ${!isAvailableForSelection ? styles.notAvailable : ''} ${isPremiumSeat ? styles.premiumSeat : ''}`}
         onClick={() => handleSeatClick(seatCode, seatClass)}
         disabled={isDisabled}
-        title={`${seatCode} - ${seatClass} ${!isAvailableForSelection ? '(Not available in your fare)' : price > 0 ? `(+$${price})` : ''}`}
+        title={`${seatCode} - ${seatClass.charAt(0).toUpperCase() + seatClass.slice(1)} Class ${isPremiumSeat ? '(Premium upgrade available)' : ''} ${price > 0 ? `(+$${price})` : ''}`}
       >
         <span className={styles.seatLabel}>{seatCode}</span>
         {status === 'occupied' && <User size={12} />}
         {status === 'selected' && <UserCheck size={12} />}
         {!isAvailableForSelection && <X size={12} />}
+        {isPremiumSeat && <span className={styles.premiumIcon}>⭐</span>}
       </button>
     );
   };
@@ -273,7 +450,28 @@ const SeatMap = ({
           <div className={`${styles.legendSeat} ${styles.occupied}`}></div>
           <span>Occupied</span>
         </div>
+        {allowFlexibleSelection && (
+          <div className={styles.legendItem}>
+            <div className={`${styles.legendSeat} ${styles.premiumSeat}`}>⭐</div>
+            <span>Premium Upgrade</span>
+          </div>
+        )}
       </div>
+
+      {allowFlexibleSelection && (
+        <div className={styles.flexibleSelectionInfo}>
+          <p className={styles.infoText}>
+            ✈️ <strong>Flexible Seat Selection:</strong> You can choose seats from any fare class. 
+            Premium seats may incur additional charges.
+          </p>
+          {selectedSeatClass !== selectedFareClass && (
+            <p className={styles.upgradeNotice}>
+              💡 You've selected seats from <strong>{selectedSeatClass}</strong> class. 
+              This may require a fare upgrade at checkout.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className={styles.selectionStatus}>
         <p>
@@ -285,7 +483,7 @@ const SeatMap = ({
               <span key={seat} className={styles.selectedSeatTag}>
                 {seat}
                 <button 
-                  onClick={() => onSeatSelect(selectedSeats.filter(s => s !== seat))}
+                  onClick={() => handleRemoveSeat(seat)}
                   className={styles.removeSeat}
                 >
                   <X size={12} />

@@ -1,12 +1,12 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_LOYALTY;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API_ENDPOINTS = {
-    VOUCHERS: '/api/v1/vouchers',
-    MEMBERSHIPS: '/api/v1/memberships',
-    POINTS: '/api/v1/points',
-    LOYALTY: '/api/v1/loyalty',
-    USER_VOUCHERS: '/api/v1/user-vouchers'
+    VOUCHERS: '/loyalty-service/api/v1/vouchers',
+    MEMBERSHIPS: '/loyalty-service/api/v1/memberships',
+    POINTS: '/loyalty-service/api/v1/points',
+    LOYALTY: '/loyalty-service/api/v1/loyalty',
+    USER_VOUCHERS: '/loyalty-service/api/v1/user-vouchers'
 };
 
 const voucherService = {

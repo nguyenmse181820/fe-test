@@ -5,7 +5,18 @@ class FlightService {
     try {
       const response = await axiosInstance.get('/flight-service/api/v1/airports');
       
+      // Handle direct array response
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      
+      // Handle wrapped response format (with statusCode)
       if (response.data.statusCode === 200) {
+        return response.data.data.content || response.data.data || [];
+      }
+      
+      // Handle direct object response with data property
+      if (response.data.data) {
         return response.data.data.content || response.data.data || [];
       }
       
@@ -20,7 +31,18 @@ class FlightService {
     try {
       const response = await axiosInstance.get('/flight-service/api/v1/fs/flights');
       
+      // Handle direct array response
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      
+      // Handle wrapped response format (with statusCode)
       if (response.data.statusCode === 200) {
+        return response.data.data.content || response.data.data || [];
+      }
+      
+      // Handle direct object response with data property
+      if (response.data.data) {
         return response.data.data.content || response.data.data || [];
       }
       
@@ -30,6 +52,54 @@ class FlightService {
       throw new Error('Unable to fetch flights. Please try again.');
     }
   }
+
+  static async getRoutes() {
+    try {
+      const response = await axiosInstance.get('/flight-service/api/v1/fs/routes');
+      
+      // Handle direct array response
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      
+      // Handle wrapped response format (with statusCode)
+      if (response.data.statusCode === 200) {
+        return response.data.data.content || response.data.data || [];
+      }
+      
+      // Handle direct object response with data property
+      if (response.data.data) {
+        return response.data.data.content || response.data.data || [];
+      }
+      
+      throw new Error('Failed to fetch routes');
+    } catch (error) {
+      console.error('FlightService - getRoutes error:', error);
+      throw new Error('Unable to fetch routes. Please try again.');
+    }
+  }
+  
+  static async searchFlights(searchParams) {
+    try {
+      const response = await axiosInstance.post('/flight-service/api/v1/fs/flights/search', searchParams);
+      
+      // Handle direct response format (no statusCode wrapper)
+      if (response.data && (response.data.directs || response.data.connects || response.data.total !== undefined)) {
+        return response.data;
+      }
+      
+      // Handle wrapped response format (with statusCode)
+      if (response.data.statusCode === 200) {
+        return response.data.data || [];
+      }
+      
+      throw new Error('Failed to search flights');
+    } catch (error) {
+      console.error('FlightService - searchFlights error:', error);
+      throw new Error('Unable to search flights. Please try again.');
+    }
+  }
+  
   static async getFlightFares(flightId) {
     try {
       // Try multiple possible API endpoints for flight fares
@@ -63,15 +133,37 @@ class FlightService {
 
   static async getFlightData() {
     try {
-      const [airports, flights] = await Promise.all([
+      const [airports, flights, routes] = await Promise.all([
         this.getAirports(),
-        this.getFlights()
+        this.getFlights(),
+        this.getRoutes()
       ]);
 
-      return { airports, flights };
+      return { airports, flights, routes };
     } catch (error) {
       console.error('FlightService - getFlightData error:', error);
       throw new Error('Unable to fetch flight data. Please try again.');
+    }
+  }
+
+  static async getFlightDetails(flightId) {
+    try {
+      const response = await axiosInstance.get(`/flight-service/api/v1/fs/flights/${flightId}/details`);
+      
+      // Handle direct response format
+      if (response.data && response.data.flightId) {
+        return response.data;
+      }
+      
+      // Handle wrapped response format (with statusCode)
+      if (response.data.statusCode === 200) {
+        return response.data.data || response.data;
+      }
+      
+      throw new Error('Failed to fetch flight details');
+    } catch (error) {
+      console.error('FlightService - getFlightDetails error:', error);
+      throw new Error('Unable to fetch flight details. Please try again.');
     }
   }
 
@@ -102,22 +194,6 @@ class FlightService {
       return flightWithFares;
     } catch (error) {
       console.error('FlightService - getFlightWithFares error:', error);
-      throw error;
-    }
-  }
-  static async getFlightDetails(flightId) {
-    try {
-      console.log('Getting flight details for flightId:', flightId);
-      const response = await axiosInstance.get(`/flight-service/api/v1/fs/flights/${flightId}/details`);
-      
-      if (response.data) {
-        console.log('Flight details received:', response.data);
-        return response.data;
-      }
-      
-      throw new Error('Flight details not found');
-    } catch (error) {
-      console.error('FlightService - getFlightDetails error:', error);
       throw error;
     }
   }

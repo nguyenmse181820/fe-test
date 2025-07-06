@@ -29,11 +29,11 @@ import CreateFlight from './pages/Dashboard/Flights/CreateFlight';
 import RouteList from './pages/Dashboard/Routes/RouteList';
 import CreateRoute from './pages/Dashboard/Routes/CreateRoute';
 import PaymentResult from './pages/Booking/PaymentResult';
+import { Toaster } from "@/components/ui/toaster";
 import PaymentSuccess from './pages/Payment/PaymentSuccess';
 import PaymentFailed from './pages/Payment/PaymentFailed';
 import RefundManagement from './pages/Dashboard/RefundManagement';
 import MyRefundRequests from './pages/Booking/MyRefundRequests';
-import { ToastContainer } from 'react-toastify';
 
 const FlightManagement = () => (
   <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -116,7 +116,7 @@ export const App = () => {
               <Route index element={<Home />} />
               <Route path="flights" element={<Flights />} />
               {/* <Route path="aircraft" element={<Aircraft />} /> */}
-              <Route path="booking/:flightId" element={<Booking />} />
+              <Route path="booking" element={<Booking />} />
 
               <Route path="check-in/detail/:bookingReference" element={
                 <ProtectedRoute roles={['user']}>
@@ -292,7 +292,7 @@ export const App = () => {
             {/* Catch all route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-          <ToastContainer position="top-right" autoClose={3000} />
+          <Toaster />
         </div>
       </Router>
     </AuthProvider >

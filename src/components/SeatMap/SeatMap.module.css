@@ -271,18 +271,50 @@
   border-color: #d1d5db;
 }
 
-.selectionStatus {
-  text-align: center;
-  padding: 1rem;
-  background: #f0f9ff;
-  border-radius: 8px;
-  border: 1px solid #bae6fd;
+.legendSeat.premiumSeat {
+  background: linear-gradient(135deg, #fef3c7, #fbbf24);
+  border-color: #f59e0b;
+  position: relative;
 }
 
-.selectionStatus p {
+.premiumIcon {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 8px;
+  background: #f59e0b;
+  color: white;
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flexibleSelectionInfo {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.infoText {
   margin: 0 0 0.5rem 0;
-  font-weight: 500;
   color: #0c4a6e;
+  font-size: 0.875rem;
+}
+
+.upgradeNotice {
+  margin: 0.5rem 0 0 0;
+  color: #dc2626;
+  font-size: 0.875rem;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 0.5rem;
 }
 
 .selectedSeats {

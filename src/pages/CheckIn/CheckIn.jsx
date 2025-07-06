@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate} from 'react-router-dom';
 import axiosInstance from '../../utils/axios';
+import { parseBackendDateTime, formatTimeWithTimezone, getUserTimezone } from '../../utils/timezone';
 import styles from './CheckIn.module.css';
 
 const CheckIn = () => {
@@ -79,7 +80,7 @@ const CheckIn = () => {
                       </div>
                       <div className={styles.flightDetails}>
                         <p>Chuyến bay: {flight.flightCode}</p>
-                        <p>Khởi hành: {new Date(flight.departureTime).toLocaleString('vi-VN')}</p>
+                        <p>Khởi hành: {formatTimeWithTimezone(flight.departureTime, getUserTimezone(), true)}</p>
                       </div>
                     </div>
                   ))}
@@ -87,7 +88,10 @@ const CheckIn = () => {
                   <div className={styles.bookingSummary}>
                     <p>Số hành khách: {booking.passengerCount}</p>
                     <p>Tổng tiền: {booking.totalAmount.toLocaleString('vi-VN')} VNĐ</p>
-                    <p>Ngày đặt: {new Date(booking.bookingDate).toLocaleDateString('vi-VN')}</p>
+                    <p>Ngày đặt: {(() => {
+                      const date = parseBackendDateTime(booking.bookingDate);
+                      return date ? date.toLocaleDateString('vi-VN') : 'N/A';
+                    })()}</p>
                     {booking.status === 'PENDING_PAYMENT' && (
                       <p className={styles.deadline}>
                         Hạn thanh toán: {new Date(booking.paymentDeadline).toLocaleString('vi-VN')}
