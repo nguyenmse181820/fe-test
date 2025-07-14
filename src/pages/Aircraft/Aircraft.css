@@ -341,3 +341,8 @@
     margin-bottom: 15px;
   }
 }
+
+.pagination .page-item.active .page-link {
+  background-color: #198754;
+  color: #fff;
+}

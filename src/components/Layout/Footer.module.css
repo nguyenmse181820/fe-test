@@ -1,8 +1,24 @@
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root > *:last-child {
+  margin-top: auto;
+}
+
 .footer {
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
   color: white;
   padding: 4rem 0 0;
   margin-top: 4rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .footerContent {

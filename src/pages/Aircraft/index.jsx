@@ -2,8 +2,7 @@ import { useEffect, useState } from "react"
 import { Container, Row, Col, Card, Button, Badge, Modal, Form, Pagination, Spinner, Alert, Nav } from "react-bootstrap"
 import { FaPlane, FaPlus, FaSearch, FaFilter, FaEdit, FaCogs } from "react-icons/fa"
 import "bootstrap/dist/css/bootstrap.min.css"
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { useToast } from "@/hooks/use-toast";
 
 import AircraftDetail from "../../components/AircraftDetail"
 import AircraftCreate from "../../components/AircraftCreate"
@@ -12,6 +11,7 @@ import axiosInstance from '../../utils/axios'
 import "./Aircraft.css"
 
 function AircraftManagement() {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('aircraft')
   
   // Aircraft states
@@ -178,7 +178,12 @@ function AircraftManagement() {
        const response = await axiosInstance.delete(`/air-craft/api/v1/aircraft/${id}`)
 
        if (response.data.status == 'Success') {
-          toast.success("You deleted successfully!")
+          toast({
+            variant: "success",
+            title: "Success",
+            description: "Delete Aircraft successfully",
+            duration: 3000,
+          });
           fetchAircrafts()
        }
     } catch (err) {
@@ -196,7 +201,12 @@ function AircraftManagement() {
         console.log(response)
 
        if (response.data.status == 'Success') {
-          toast.success("Aircraft type deleted successfully!")
+          toast({
+            variant: "success",
+            title: "Success",
+            description: "Aircraft type deleted successfully!",
+            duration: 3000,
+          });
           fetchAircraftTypes()
        }
     } catch (err) {
@@ -210,7 +220,12 @@ function AircraftManagement() {
       const response = await axiosInstance.put(`/air-craft/api/v1/aircraft/${id}/restore`)
 
       if (response.data.status == 'Success') {
-          toast.success("You restored successfully!")
+          toast({
+            variant: "success",
+            title: "Success",
+            description: "You restored successfully!",
+            duration: 3000,
+          });
           fetchAircrafts()
        }
     } catch (err) {
@@ -224,7 +239,12 @@ function AircraftManagement() {
       const response = await axiosInstance.put(`/air-craft/api/v1/aircraft-type/${id}/restore`)
 
       if (response.data.status == 'Success') {
-          toast.success("Aircraft type restored successfully!")
+          toast({
+            variant: "success",
+            title: "Success",
+            description: "Aircraft type restored successfully!",
+            duration: 3000,
+          });
           fetchAircraftTypes()
        }
     } catch (err) {
@@ -823,7 +843,12 @@ function AircraftManagement() {
         <Modal.Body style={{ maxHeight: '80vh', overflowY: 'auto' }}>
           <AircraftCreate onSuccess={() => {
             setShowCreateModal(false)
-            toast.success('Create aircraft successfully!');
+            toast({
+              variant: "success",
+              title: "Success",
+              description: "Create aircraft successfully!",
+              duration: 3000,
+            });
             fetchAircrafts()
           }} />
         </Modal.Body>
@@ -845,7 +870,12 @@ function AircraftManagement() {
         <Modal.Body style={{ maxHeight: '80vh', overflowY: 'auto' }}>
           <AircraftTypeCreate onSuccess={() => {
             setShowCreateTypeModal(false)
-            toast.success('Create aircraft type successfully!');
+            toast({
+              variant: "success",
+              title: "Success",
+              description: "Create aircraft type successfully!",
+              duration: 3000,
+            });
             fetchAircraftTypes()
           }} />
         </Modal.Body>
@@ -868,7 +898,12 @@ function AircraftManagement() {
           <AircraftCreate 
             onSuccess={() => {
               setShowEditModal(false);
-              toast.success('Aircraft updated successfully!');
+              toast({
+                variant: "success",
+                title: "Success",
+                description: "Aircraft updated successfully!",
+                duration: 3000,
+              });
               fetchAircrafts();
             }} 
             initialData={editingAircraft}
@@ -894,7 +929,12 @@ function AircraftManagement() {
           <AircraftTypeCreate 
             onSuccess={() => {
               setShowEditTypeModal(false);
-              toast.success('Aircraft type updated successfully!');
+              toast({
+                variant: "success",
+                title: "Success",
+                description: "Aircraft type updated successfully!",
+                duration: 3000,
+              });
               fetchAircraftTypes();
             }} 
             initialData={editingAircraftType}
@@ -902,15 +942,6 @@ function AircraftManagement() {
           />
         </Modal.Body>
       </Modal>
-
-      <ToastContainer
-        position="top-right"
-        autoClose={2000}
-        hideProgressBar={false}
-        closeOnClick
-        pauseOnHover
-        theme="light"
-      />
 
     </Container>
   )

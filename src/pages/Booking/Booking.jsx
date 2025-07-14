@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { getData } from 'country-list';
 import {
   Calendar,
   Clock,
@@ -18,19 +19,34 @@ import {
   Phone,
   Gift,
   Info,
-  UserCheck
+  UserCheck,
+  Package
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { createBooking, getUserVouchers, getAvailableSeatsCount, checkSeatAvailability } from '../../services/BookingService';
 import { getUserProfile } from '../../services/UserService';
 import axiosInstance from '../../utils/axios';
 import SeatMap from '../../components/SeatMap/SeatMap';
+import BaggageSelection from '../../components/BaggageSelection/BaggageSelection';
+import VoucherSelection from '../../components/VoucherSelection/VoucherSelection';
+import { useAuth } from '../../context/AuthContext';
 import styles from './Booking.module.css';
 
 const Booking = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Debug authentication status
+  useEffect(() => {
+    console.log('🔐 Booking page authentication status:');
+    console.log('- User:', user);
+    console.log('- Token exists:', !!localStorage.getItem('token'));
+    console.log('- Current user data:', localStorage.getItem('currentUser'));
+  }, [user]);
+
+  const countries = useMemo(() => getData(), []);
 
   // Get flight IDs and passenger details from URL parameters
   const flightIdsParam = searchParams.get('flights');
@@ -65,12 +81,13 @@ const Booking = () => {
   const [childCount, setChildCount] = useState(initialChildCount);
   const [infantCount, setInfantCount] = useState(initialInfantCount);
 
-  // Step management - Simplified to 3 steps
+  // Step management - Updated to 4 steps with baggage
   const [currentStep, setCurrentStep] = useState(1);
   const steps = [
     { id: 1, name: 'Seat Selection', icon: MapPin },
     { id: 2, name: 'Passenger Info', icon: User },
-    { id: 3, name: 'Payment', icon: CreditCard }
+    { id: 3, name: 'Baggage Add-ons', icon: Package },
+    { id: 4, name: 'Payment', icon: CreditCard }
   ];
 
   // Flight and fare data - updated to handle multiple flights
@@ -97,10 +114,15 @@ const Booking = () => {
   const [selectedVoucher, setSelectedVoucher] = useState(null);
   const [voucherCode, setVoucherCode] = useState('');
   const [loadingVouchers, setLoadingVouchers] = useState(false);
+  const [voucherDiscount, setVoucherDiscount] = useState(0);
 
   // User profile for auto-fill
   const [userProfile, setUserProfile] = useState(null);
   const [hasUsedAutoFill, setHasUsedAutoFill] = useState(false);
+
+  // Baggage add-ons
+  const [baggageSelections, setBaggageSelections] = useState({});
+  const [showBaggageSelection, setShowBaggageSelection] = useState(false);
 
   // Passenger data - update when passenger count changes
   const [passengers, setPassengers] = useState([]);
@@ -234,7 +256,7 @@ const Booking = () => {
     email: '',
     phone: ''
   });
-  const [paymentMethod, setPaymentMethod] = useState('VNPAY');
+  const [paymentMethod, setPaymentMethod] = useState('VNPAY_BANKTRANSFER');
   const [processing, setProcessing] = useState(false);
   // Add booking progress state
   const [bookingProgress, setBookingProgress] = useState(0);
@@ -278,26 +300,31 @@ const Booking = () => {
   };
 
   const isPassengerInfoValid = useMemo(() => {
-    // Check every passenger's details
-    for (const passenger of passengers) {
+    for (const [index, passenger] of passengers.entries()) {
       if (!passenger.firstName?.trim() || !passenger.lastName?.trim() || !passenger.dateOfBirth) {
-        return false; // A required field is missing
+        return false;
       }
-      // Check if the entered DOB matches the expected passenger type
-      const expectedType = determinePassengerType(passenger.dateOfBirth);
-      if (passenger.passengerType !== expectedType) {
-        return false; // Age does not match the passenger category (e.g., adult, child)
+      let designatedType;
+      if (index < adultCount) {
+        designatedType = 'ADULT';
+      } else if (index < adultCount + childCount) {
+        designatedType = 'CHILD';
+      } else {
+        designatedType = 'INFANT';
+      }
+
+      const actualTypeFromDob = determinePassengerType(passenger.dateOfBirth);
+      if (actualTypeFromDob !== designatedType) {
+        return false;
       }
     }
 
-    // Check the main contact information
     if (!contactInfo.email?.trim() || !contactInfo.phone?.trim()) {
-      return false; // Contact info is missing
+      return false;
     }
 
-    // If all checks pass, the information is valid
     return true;
-  }, [passengers, contactInfo]);
+  }, [passengers, contactInfo, adultCount, childCount]);
 
   // Validate URL parameters
   useEffect(() => {
@@ -330,6 +357,13 @@ const Booking = () => {
       setLoading(false);
       return;
     }
+    if (initialInfantCount > initialAdultCount) {
+      setError(
+        'The number of infants cannot exceed the number of adults. Each infant must be accompanied by an adult. Please return to the flight search page to adjust your selection.'
+      );
+      setLoading(false); // Stop the loading spinner
+      return; // Stop further execution of this hook
+    }
   }, [flightIds.join(','), initialAdultCount, initialChildCount, initialInfantCount]); // Update dependencies
 
   // Initialize flight data and fares
@@ -351,34 +385,44 @@ const Booking = () => {
           throw new Error('Failed to load details for one or more flights.');
         }
 
-        // Step 2: For each flight, fetch its specific seat sections (layout)
-        const sectionPromises = flightDetailsArray.map(flight => {
-          if (!flight.aircraft?.id) {
-            // If a flight is missing aircraft info, return it as-is to avoid a crash
-            console.warn(`Flight ${flight.flightId} is missing aircraft ID.`);
+        // Step 2: For each flight, fetch its detailed information including seat layout
+        const detailPromises = flightDetailsArray.map(flight => {
+          if (!flight.flightId) {
+            // If a flight is missing flight ID, return it as-is to avoid a crash
+            console.warn(`Flight is missing flight ID.`);
             return Promise.resolve(flight);
           }
-          return axiosInstance.get(`/flight-service/api/v1/fs/aircraft/${flight.aircraft.id}/seat-sections`);
+          return axiosInstance.get(`/flight-service/api/v1/fs/flights/${flight.flightId}/details`);
         });
 
-        const sectionResponses = await Promise.all(sectionPromises);
+        const detailResponses = await Promise.all(detailPromises);
 
-        // Step 3: Merge the seat sections back into each flight object
+        // Step 3: Merge the detailed flight data including seat information
         const enrichedFlightDetails = flightDetailsArray.map((flight, index) => {
-          const sectionsData = sectionResponses[index]?.data?.seatSections;
-          if (sectionsData) {
+          const detailedFlightData = detailResponses[index]?.data;
+          if (detailedFlightData) {
+            // Transform the fare data to include seat sections for backward compatibility
+            const seatSections = {};
+            if (detailedFlightData.availableFares) {
+              detailedFlightData.availableFares.forEach(fare => {
+                if (fare.seats && fare.seats.length > 0) {
+                  seatSections[fare.fareType] = fare.seats;
+                }
+              });
+            }
+            
             return {
               ...flight,
+              ...detailedFlightData,
               aircraft: {
                 ...flight.aircraft,
-                seatSections: sectionsData,
+                ...detailedFlightData.aircraft,
+                seatSections: seatSections,
               },
             };
           }
-          return flight; // Return original flight if sections couldn't be fetched
+          return flight; // Return original flight if details couldn't be fetched
         });
-
-        console.log('Enriched flight details with seat sections:', enrichedFlightDetails);
 
         // Step 4: Set the final, complete state
         setAllFlightDetails(enrichedFlightDetails);
@@ -445,14 +489,21 @@ const Booking = () => {
 
     setLoadingAvailableSeats(true);
     try {
-      // Try to get total available seats across all fare classes
-      const seatResponse = await axiosInstance.get(
-        `/flight-service/api/v1/fs/aircraft/${flightDetails.aircraft?.id}/seat-sections`
+      // Get detailed flight information which includes seat data
+      const flightDetailsResponse = await axiosInstance.get(
+        `/flight-service/api/v1/fs/flights/${flightDetails.flightId}/details`
       );
 
-      if (seatResponse.data?.seatSections) {
-        const sections = seatResponse.data.seatSections;
-        console.log('Seat sections loaded:', sections);
+      if (flightDetailsResponse.data?.availableFares) {
+        const fares = flightDetailsResponse.data.availableFares;
+        
+        // Transform fare data to seat sections format for backward compatibility
+        const sections = {};
+        fares.forEach(fare => {
+          if (fare.seats && fare.seats.length > 0) {
+            sections[fare.fareType] = fare.seats;
+          }
+        });
 
         // Save seat sections data to flightDetails for use in price calculations
         setFlightDetails(prev => ({
@@ -676,6 +727,21 @@ const Booking = () => {
     return Array.isArray(seatArray) && seatArray.includes(seatCode);
   };
 
+  const handlePassengerChange = (index, field, value) => {
+    const updatedPassengers = [...passengers];
+
+    const passenger = { ...updatedPassengers[index], [field]: value };
+
+    if (field === 'dateOfBirth') {
+      passenger.passengerType = determinePassengerType(value);
+      passenger.requiresDocument = requiresIdentityDocument(value);
+    }
+
+    updatedPassengers[index] = passenger;
+
+    setPassengers(updatedPassengers);
+  };
+
   // Helper function to get seat class from seat code for a specific flight
   const getSeatClassForFlight = (seatCode, flight) => {
     // Early check for missing inputs
@@ -683,10 +749,6 @@ const Booking = () => {
       console.warn('getSeatClassForFlight called with missing parameters:', { seatCode, flight });
       return 'ECONOMY';
     }
-
-    console.log('getSeatClassForFlight called with:', seatCode, 'for flight:', flight?.flightNumber || flight?.flightId);
-
-    // Check if flight has seat sections data
     if (flight?.aircraft?.seatSections) {
       const sections = flight.aircraft.seatSections;
 
@@ -702,7 +764,6 @@ const Booking = () => {
         if (normalizedSections[section] &&
           Array.isArray(normalizedSections[section]) &&
           normalizedSections[section].includes(seatCode)) {
-          console.log(`Seat ${seatCode} found in standard class ${section}`);
           return section;
         }
       }
@@ -713,13 +774,11 @@ const Booking = () => {
         if (standardSections.includes(sectionClass)) continue;
 
         if (Array.isArray(seats) && seats.includes(seatCode)) {
-          console.log(`Seat ${seatCode} found in class ${sectionClass}`);
           return sectionClass;
         }
       }
     }
 
-    console.log('Using seat code pattern matching fallback for seat:', seatCode);
     const match = seatCode.match(/(\d+)([A-Z])/);
     if (match) {
       const rowNum = parseInt(match[1]);
@@ -739,19 +798,18 @@ const Booking = () => {
       return 'ECONOMY';
     }
 
-    console.log(`Could not determine class for seat ${seatCode}, defaulting to ECONOMY`);
     return 'ECONOMY';
   };
 
   // Add a simple wrapper around getSeatClassForFlight to provide a getSeatClass function
   const getSeatClass = (seatCode) => {
     if (!seatCode) return 'ECONOMY';
-    
+
     // Use the detailed function if we have flight details
     if (flightDetails?.aircraft?.seatSections) {
       return getSeatClassForFlight(seatCode, flightDetails);
     }
-    
+
     // Fallback to pattern matching
     const match = seatCode.match(/(\d+)([A-Z])/);
     if (match) {
@@ -768,7 +826,7 @@ const Booking = () => {
         return 'BUSINESS';
       }
     }
-    
+
     // Default to economy
     return 'ECONOMY';
   };
@@ -790,6 +848,19 @@ const Booking = () => {
         setSelectedVoucher(matchingVoucher);
       }
     }
+  };
+
+  // New voucher handlers for VoucherSelection component
+  const handleVoucherApplied = (voucherData) => {
+    setSelectedVoucher(voucherData);
+    setVoucherDiscount(voucherData.discountAmount || 0);
+    setVoucherCode(voucherData.code);
+  };
+
+  const handleVoucherRemoved = () => {
+    setSelectedVoucher(null);
+    setVoucherDiscount(0);
+    setVoucherCode('');
   };
 
   // Auto-fill passenger info with current user (only for first passenger, one-time use)
@@ -849,6 +920,11 @@ const Booking = () => {
   const validateCurrentStep = () => {
     switch (currentStep) {
       case 1: // Seat Selection
+        if (infantCount > adultCount) {
+          toast.error('Error: The number of infants cannot exceed the number of adults.');
+          return false;
+        }
+
         if (!isSeatSelectionComplete) {
           const requiredSeats = adultCount + childCount;
           toast.error(`Please select ${requiredSeats} seat(s) for each flight segment to continue.`);
@@ -872,10 +948,6 @@ const Booking = () => {
             toast.error(`Passenger ${i + 1}'s date of birth does not match the expected age for a ${p.passengerType.toLowerCase()}.`);
             return false;
           }
-          if (p.requiresDocument && !p.idNumber?.trim() && !p.passportNumber?.trim()) {
-            toast.error(`Passenger ${i + 1} requires an ID or Passport Number.`);
-            return false;
-          }
         }
         if (!contactInfo.email?.trim() || !contactInfo.phone?.trim()) {
           toast.error('Please provide complete contact information.');
@@ -883,13 +955,21 @@ const Booking = () => {
         }
         return true;
 
-      case 3: // Payment
+      case 3: // Baggage Add-ons (optional step, always valid)
+        return true;
+
+      case 4: // Payment
         return paymentMethod !== null;
 
       default:
         return true;
     }
   };
+
+  // Baggage selection handler
+  const handleBaggageChange = useCallback((newBaggageSelections) => {
+    setBaggageSelections(newBaggageSelections);
+  }, []);
 
   // Navigation handlers
   const handleNextStep = () => {
@@ -908,7 +988,14 @@ const Booking = () => {
     }
   };
 
-  // Enhanced booking submission
+  const handleGoToNextFlight = () => {
+    const nextFlightIndex = currentFlightTab + 1;
+    if (nextFlightIndex < allFlightDetails.length) {
+      setCurrentFlightTab(nextFlightIndex);
+    }
+  };
+
+  // Enhanced booking submission with better seat availability checking
   const handleBookingSubmission = async () => {
     if (!validateCurrentStep()) {
       return;
@@ -918,149 +1005,129 @@ const Booking = () => {
     setBookingProgress(10);
 
     try {
-      // Check seat availability before booking
+      // Step 1: Final seat availability check before booking
       setBookingProgress(20);
-      
-      // For multi-flight bookings, check availability for each flight with its selected seats
+
+      let allSeatsAvailable = true;
+      const unavailableSeatsDetails = [];
+
       if (hasConnectingFlights()) {
-        // Process each flight separately
+        // Process each flight separately for multi-flight bookings
         for (let flightIndex = 0; flightIndex < allFlightDetails.length; flightIndex++) {
           const flight = allFlightDetails[flightIndex];
           const seatsForThisFlight = selectedSeatsByFlight[flightIndex] || [];
-          
-          // Skip if no seats selected for this flight (shouldn't happen)
+
           if (!seatsForThisFlight.length) continue;
-          
-          console.log(`Checking availability for flight ${flight.flightId}, seats: ${seatsForThisFlight.join(', ')}`);
-          
-          const seatAvailability = await checkSeatAvailability(flight.flightId, seatsForThisFlight);
-          console.log(`Seat availability response for flight ${flightIndex}:`, seatAvailability);
-          
-          // Check response format - backend might return different formats
-          if (!seatAvailability.success) {
-            toast.error(`Failed to check seat availability for flight ${flightIndex + 1}.`);
+
+          try {
+            const seatAvailability = await checkSeatAvailability(flight.flightId, seatsForThisFlight);
+
+            if (!seatAvailability.allRequestedSeatsAvailable) {
+              allSeatsAvailable = false;
+              const flightUnavailable = seatAvailability.unavailableSeats || seatsForThisFlight;
+              unavailableSeatsDetails.push({
+                flightIndex,
+                flightNumber: flight.flightNumber || flight.flightCode,
+                unavailableSeats: flightUnavailable
+              });
+            }
+          } catch (error) {
+            console.error(`[Booking] Failed to check seats for flight ${flightIndex + 1}:`, error);
+            toast.error(`Unable to verify seat availability for Flight ${flightIndex + 1}. Please try again.`);
             setProcessing(false);
             return;
-          }
-          
-          // Handle response format with allRequestedSeatsAvailable
-          if (seatAvailability.allRequestedSeatsAvailable === false) {
-            toast.error(`Some seats on Flight ${flightIndex + 1} are no longer available. Please select new seats.`);
-            setProcessing(false);
-            return;
-          }
-          
-          // Handle response format with seatStatuses array
-          if (seatAvailability.seatStatuses && Array.isArray(seatAvailability.seatStatuses)) {
-            const unavailableSeats = seatAvailability.seatStatuses
-              .filter(status => !status.available)
-              .map(status => status.seatCode);
-              
-            if (unavailableSeats.length > 0) {
-              toast.error(`Seats ${unavailableSeats.join(', ')} are no longer available on Flight ${flightIndex + 1}. Please select new seats.`);
-              setProcessing(false);
-              return;
-            }
-          }
-          
-          // Handle older response format with data.availableSeats
-          if (seatAvailability.data) {
-            if (seatAvailability.data.allAvailable === false) {
-              let unavailableSeats = [];
-              
-              if (seatAvailability.data.availableSeats) {
-                // If availableSeats is provided, use it to determine which seats are unavailable
-                unavailableSeats = seatsForThisFlight.filter(
-                  (seat) => !seatAvailability.data.availableSeats.includes(seat)
-                );
-              }
-              
-              toast.error(`Seats ${unavailableSeats.length > 0 ? unavailableSeats.join(', ') : 'selected'} are no longer available on Flight ${flightIndex + 1}. Please select new seats.`);
-              setProcessing(false);
-              return;
-            }
           }
         }
       } else {
-        // Single flight - use updated handling logic
-        const seatAvailability = await checkSeatAvailability(flightDetails.flightId, selectedSeats);
-        console.log(`Seat availability response for single flight:`, seatAvailability);
-        
-        // Check response format - backend might return different formats
-        if (!seatAvailability.success) {
-          toast.error(`Failed to check seat availability.`);
+        try {
+          const seatAvailability = await checkSeatAvailability(flightDetails.flightId, selectedSeats);
+
+          if (!seatAvailability.allRequestedSeatsAvailable) {
+            allSeatsAvailable = false;
+            unavailableSeatsDetails.push({
+              flightIndex: 0,
+              flightNumber: flightDetails.flightNumber || flightDetails.flightCode,
+              unavailableSeats: seatAvailability.unavailableSeats || selectedSeats
+            });
+          }
+        } catch (error) {
+          console.error('[Booking] Failed to check seats for single flight:', error);
+          toast.error('Unable to verify seat availability. Please try again.');
           setProcessing(false);
           return;
         }
-        
-        // Handle response format with allRequestedSeatsAvailable at top level
-        if (seatAvailability.allRequestedSeatsAvailable === false) {
-          toast.error(`Some seats are no longer available. Please select new seats.`);
-          setProcessing(false);
-          return;
-        }
-        
-        // Handle response format with seatStatuses array
-        if (seatAvailability.seatStatuses && Array.isArray(seatAvailability.seatStatuses)) {
-          const unavailableSeats = seatAvailability.seatStatuses
-            .filter(status => !status.available)
-            .map(status => status.seatCode);
-            
-          if (unavailableSeats.length > 0) {
-            toast.error(`Seats ${unavailableSeats.join(', ')} are no longer available. Please select new seats.`);
-            setProcessing(false);
-            return;
-          }
-        }
-        
-        // Handle older response format with data.availableSeats
-        if (seatAvailability.data) {
-          if (seatAvailability.data.allAvailable === false) {
-            let unavailableSeats = [];
-            
-            if (seatAvailability.data.availableSeats) {
-              // If availableSeats is provided, use it to determine which seats are unavailable
-              unavailableSeats = selectedSeats.filter(
-                (seat) => !seatAvailability.data.availableSeats.includes(seat)
-              );
-            }
-            
-            toast.error(`Seats ${unavailableSeats.length > 0 ? unavailableSeats.join(', ') : 'selected'} are no longer available. Please select new seats.`);
-            setProcessing(false);
-            return;
-          }
-        }
+      }
+
+      // Handle unavailable seats
+      if (!allSeatsAvailable) {
+        const errorMessages = unavailableSeatsDetails.map(detail =>
+          `Flight ${detail.flightNumber}: Seats ${detail.unavailableSeats.join(', ')} are no longer available`
+        );
+
+        toast.error(
+          `Some seats are no longer available:\n${errorMessages.join('\n')}\n\nPlease select different seats and try again.`,
+          { autoClose: 10000 }
+        );
+
+        // Navigate back to seat selection step
+        setCurrentStep(1);
+        setProcessing(false);
+        return;
       }
 
       setBookingProgress(40);
 
-      // Prepare booking data
+      // Step 2: Prepare booking data
       const bookingData = prepareBookingDataForMultipleFlights();
 
       setBookingProgress(60);
 
-      // Submit booking
+      // Step 3: Submit booking
       const booking = await createBooking(bookingData);
 
       setBookingProgress(80);
+      console.log('[BOOKING] Booking response received:', booking);
+      console.log('[BOOKING] Full response object keys:', Object.keys(booking));
+      console.log('[BOOKING] vnpayPaymentUrl value:', booking.vnpayPaymentUrl);
+      console.log('[BOOKING] vnpayPaymentUrl type:', typeof booking.vnpayPaymentUrl);
+      console.log('[BOOKING] Is vnpayPaymentUrl truthy?:', !!booking.vnpayPaymentUrl);
 
-      // Handle payment if VNPay is selected
-      if (paymentMethod === 'VNPAY') {
-        // Redirect to VNPay or handle payment
-        setBookingProgress(90);
-        // Add VNPay integration here
-      }
+      // Step 4: Handle successful booking
+      setBookingProgress(90);
 
+      toast.success('Booking created successfully! Redirecting to payment...');
       setBookingProgress(100);
 
-      // Redirect to success page
-      navigate(`/booking/success/${booking.bookingReference}`, {
-        state: { booking, flightDetails }
-      });
+      // Check if we have a payment URL and redirect to payment
+      if (booking.vnpayPaymentUrl && booking.vnpayPaymentUrl.trim() !== '') {
+        console.log('[BOOKING] Redirecting to VNPay payment URL:', booking.vnpayPaymentUrl);
+        // Redirect to VNPay payment page
+        window.location.href = booking.vnpayPaymentUrl;
+      } else {
+        console.warn('[BOOKING] No payment URL received or URL is empty');
+        console.warn('[BOOKING] booking.vnpayPaymentUrl:', JSON.stringify(booking.vnpayPaymentUrl));
+        console.warn('[BOOKING] Full booking object:', JSON.stringify(booking, null, 2));
+        console.warn('[BOOKING] Redirecting to booking details page');
+        // Fallback: Navigate to booking details page
+        navigate(`/booking-details/${booking.bookingReference}`, {
+          state: { booking, flightDetails: getAllFlightDetailsForDisplay() }
+        });
+      }
 
     } catch (error) {
-      console.error('Booking submission error:', error);
-      toast.error(error.message || 'Failed to create booking. Please try again.');
+      console.error('[Booking] Booking submission error:', error);
+
+      // Enhanced error handling
+      if (error.message?.includes('seat') || error.message?.includes('availability')) {
+        toast.error('Seat availability has changed. Please reselect your seats and try again.');
+        setCurrentStep(1); // Go back to seat selection
+      } else if (error.message?.includes('payment')) {
+        toast.error('Payment processing failed. Your booking was not completed. Please try again.');
+      } else if (error.message?.includes('timeout')) {
+        toast.error('The booking process timed out. Please check your booking status and try again if needed.');
+      } else {
+        toast.error(error.message || 'Failed to create booking. Please try again.');
+      }
     } finally {
       setProcessing(false);
       setBookingProgress(0);
@@ -1100,11 +1167,6 @@ const Booking = () => {
       displayClassName = 'Business';
     }
 
-    // Step 4: Return the result. Use the found price, or 0 if no matching fare exists.
-    // Ensure we're getting the actual price from the matching fare
-    // Log the found price for debugging
-    console.log(`Seat ${seatCode} is in class ${determinedSeatClass}, matched fare:`, matchingFare);
-
     return {
       farePrice: matchingFare?.price || 0,
       className: displayClassName,
@@ -1112,30 +1174,19 @@ const Booking = () => {
     };
   };
 
-
-  // HÀM TÍNH TOÁN GIÁ MỚI - THAY THẾ HOÀN TOÀN HÀM CŨ
-  // Sử dụng useMemo để tối ưu, chỉ tính lại khi cần thiết.
   const priceBreakdown = useMemo(() => {
     let subtotal = 0;
     const groupedSeats = {};
 
-    // Lặp qua từng chặng bay
     allFlightDetails.forEach((flight, flightIndex) => {
       const seatsForThisFlight = selectedSeatsByFlight[flightIndex] || [];
 
-      // Lặp qua các ghế đã chọn chỉ cho chặng bay đó
       seatsForThisFlight.forEach(seat => {
-        // Sử dụng helper mới để lấy giá và loại ghế chính xác
         const { farePrice, className, seatClass } = getPriceAndClassForSeat(seat, flight);
 
-        // Log để debug giá vé
-        console.log(`Flight ${flightIndex} - Seat ${seat}: Class=${seatClass}, DisplayName=${className}, Price=${farePrice}`);
-
-        // Chỉ cộng giá 1 lần cho 1 ghế trên 1 chuyến bay
         subtotal += farePrice;
 
-        // Nhóm ghế để hiển thị trong summary
-        const key = allFlightDetails.length > 1 ? `Chặng ${flightIndex + 1} - ${className}` : className;
+        const key = allFlightDetails.length > 1 ? `Segment  ${flightIndex + 1} - ${className}` : className;
         if (!groupedSeats[key]) {
           groupedSeats[key] = { count: 0, totalPrice: 0, seats: [] };
         }
@@ -1145,17 +1196,34 @@ const Booking = () => {
       });
     });
 
+    // Calculate baggage costs
+    let baggageTotal = 0;
+    Object.values(baggageSelections).forEach(passengerBaggage => {
+      Object.values(passengerBaggage).forEach(baggage => {
+        // Each baggage selection is for one item (no quantity field needed)
+        baggageTotal += baggage.price || 0;
+      });
+    });
+
     const infantTotal = (infantCount > 0 && allFlightDetails.length > 0) ? (100000 * infantCount * allFlightDetails.length) : 0;
-    const totalBeforeTaxes = subtotal + infantTotal;
+    const totalBeforeTaxes = subtotal + infantTotal + baggageTotal;
+    
+    // Calculate tax for display purposes (10%)
     const taxesAndFees = Math.round(totalBeforeTaxes * 0.1);
     const totalWithTaxes = totalBeforeTaxes + taxesAndFees;
 
     let discount = 0;
-    if (selectedVoucher && totalWithTaxes >= (selectedVoucher.minimumPurchaseAmount || 0)) {
-      discount = Math.min(
-        totalWithTaxes * (selectedVoucher.discountPercentage / 100),
-        selectedVoucher.maximumDiscountAmount || Infinity
-      );
+    if (selectedVoucher) {
+      if (selectedVoucher.discountAmount !== undefined) {
+        // Use the calculated discount from the voucher service
+        discount = selectedVoucher.discountAmount;
+      } else if (selectedVoucher.discountPercentage && totalWithTaxes >= (selectedVoucher.minimumPurchaseAmount || 0)) {
+        // Fallback to legacy calculation
+        discount = Math.min(
+          totalWithTaxes * (selectedVoucher.discountPercentage / 100),
+          selectedVoucher.maximumDiscountAmount || Infinity
+        );
+      }
     }
 
     const total = Math.max(0, totalWithTaxes - discount);
@@ -1163,12 +1231,15 @@ const Booking = () => {
     return {
       subtotal,
       infantTotal,
+      baggageTotal,
+      totalBeforeTaxes,
       taxesAndFees,
+      totalWithTaxes,
       discount,
       total,
       groupedSeats
     };
-  }, [selectedSeatsByFlight, infantCount, allFlightDetails, selectedVoucher]); // Dependencies
+  }, [selectedSeatsByFlight, infantCount, allFlightDetails, selectedVoucher, baggageSelections, voucherDiscount]); 
 
   // HÀM TÍNH TỔNG TIỀN MỚI - THAY THẾ HÀM CŨ
   const calculateTotal = () => {
@@ -1188,73 +1259,138 @@ const Booking = () => {
   const formatMultiFlightRoute = () => {
     if (allFlightDetails.length <= 1) return null;
 
-    const origins = allFlightDetails.map(flight => flight.departureAirport).join(' → ');
-    const destinations = allFlightDetails.map(flight => flight.arrivalAirport);
-    return `${origins} → ${destinations[destinations.length - 1]}`;
+    // Get all unique airports in the journey
+    const airports = [];
+    allFlightDetails.forEach(flight => {
+      if (airports.length === 0) {
+        airports.push(flight.departureAirport);
+      }
+      airports.push(flight.arrivalAirport);
+    });
+
+    return airports.join(' → ');
   };
 
   // Enhanced booking data preparation for multiple flights
+  // Prepare baggage add-ons for booking submission
+  const prepareBaggageAddons = () => {
+    const baggageList = [];
+    
+    Object.values(baggageSelections).forEach(passengerBaggage => {
+      Object.values(passengerBaggage).forEach(baggage => {
+        // Each baggage selection represents one item (no quantity needed)
+        baggageList.push({
+          passengerIndex: baggage.passengerIndex,
+          flightId: baggage.flightId, // Should be a string UUID or null
+          weight: baggage.weight,
+          type: baggage.type,
+          price: baggage.price
+        });
+      });
+    });
+    
+    return baggageList;
+  };
+
   const prepareBookingDataForMultipleFlights = () => {
     const flightDetailsArray = getAllFlightDetailsForDisplay();
 
-    // Calculate seat pricing for each flight - taking into account multi-flight scenario
+    // Build seat selections in the format backend expects
+    let seatSelections = {};
     let seatPricingByFlight = [];
-    
+
     // For multi-flight bookings, use the selectedSeatsByFlight mapping
     if (hasConnectingFlights()) {
       // Process each flight and its seats separately
       flightDetailsArray.forEach((flight, flightIndex) => {
         const seatsForThisFlight = selectedSeatsByFlight[flightIndex] || [];
-        
-        // Create a pricing entry for each seat on this flight
+
+        // Add seats for this flight to selections - using flightId as key (not index)
+        if (seatsForThisFlight.length > 0) {
+          // Ensure we're using the actual UUID string as the key, not the array index
+          const flightUuid = flight.flightId.toString();
+          seatSelections[flightUuid] = seatsForThisFlight;
+          console.log(`[BOOKING] Mapping flight ${flightIndex} (UUID: ${flightUuid}) with ${seatsForThisFlight.length} seats`);
+        }
+
+        // Create pricing entries for each passenger on this flight
         const seatPricingsForThisFlight = [];
-        
-        // For each seat in this flight
-        seatsForThisFlight.forEach(seat => {
-          // Get proper seat class and fare info for this specific seat in this specific flight
-          const { seatClass, farePrice } = getPriceAndClassForSeat(seat, flight);
+
+        // Ensure we have pricing data for each passenger
+        for (let passengerIndex = 0; passengerIndex < passengers.length; passengerIndex++) {
+          const seat = seatsForThisFlight[passengerIndex]; // Get seat for this passenger
           
-          console.log(`Flight ${flightIndex}: Adding seat ${seat}, class ${seatClass}, price ${farePrice}`);
-          
-          // Add to the pricing data for this flight - match the backend expected format
-          const matchingFare = flight.availableFares.find(
-            f => f.fareType === seatClass || f.name?.toUpperCase().includes(seatClass)
-          );
-          
-          seatPricingsForThisFlight.push({
-            flightId: flight.flightId,
-            seatCode: seat, 
-            seatClass,
-            farePrice,
-            fareId: matchingFare?.id // Include fare ID which might be needed by backend
-          });
-        });
-        
-        // Add this flight's seat pricing to the overall array
+          if (seat) {
+            const { seatClass, farePrice } = getPriceAndClassForSeat(seat, flight);
+
+            const matchingFare = flight.availableFares.find(
+              f => f.fareType === seatClass || f.name?.toUpperCase().includes(seatClass)
+            );
+
+            seatPricingsForThisFlight.push({
+              flightId: flight.flightId,
+              seatCode: seat,
+              seatClass,
+              farePrice,
+              fareId: matchingFare?.id
+            });
+          } else {
+            // No seat selected for this passenger (e.g., infant) - still need pricing entry
+            seatPricingsForThisFlight.push({
+              flightId: flight.flightId,
+              seatCode: null,
+              seatClass: 'ECONOMY',
+              farePrice: 0, // Infants typically don't pay for seats
+              fareId: null
+            });
+          }
+        }
+
         if (seatPricingsForThisFlight.length > 0) {
           seatPricingByFlight.push(seatPricingsForThisFlight);
         }
       });
     } else {
-      // Single flight - make sure we have the right structure
-      selectedSeats.forEach(seat => {
-        const { seatClass, farePrice } = getPriceAndClassForSeat(seat, flightDetails);
+      // Single flight - simpler structure
+      if (selectedSeats.length > 0) {
+        seatSelections[flightDetails.flightId] = selectedSeats;
+      }
+
+      // Create pricing entries for each passenger
+      const seatPricingsForSingleFlight = [];
+      
+      for (let passengerIndex = 0; passengerIndex < passengers.length; passengerIndex++) {
+        const seat = selectedSeats[passengerIndex]; // Get seat for this passenger
         
-        // Include fare ID for the backend
-        const matchingFare = flightDetails.availableFares.find(
-          f => f.fareType === seatClass || f.name?.toUpperCase().includes(seatClass)
-        );
-        
-        console.log(`Single flight: Adding seat ${seat}, class ${seatClass}, price ${farePrice}, fare:`, matchingFare);
-        
-        seatPricingByFlight.push([{
-          flightId: flightDetails.flightId,
-          seatCode: seat,
-          seatClass,
-          farePrice,
-          fareId: matchingFare?.id // Include fare ID which might be needed by backend
-        }]);
-      });
+        if (seat) {
+          const { seatClass, farePrice } = getPriceAndClassForSeat(seat, flightDetails);
+
+          const matchingFare = flightDetails.availableFares.find(
+            f => f.fareType === seatClass || f.name?.toUpperCase().includes(seatClass)
+          );
+
+          seatPricingsForSingleFlight.push({
+            flightId: flightDetails.flightId,
+            seatCode: seat,
+            seatClass,
+            farePrice,
+            fareId: matchingFare?.id
+          });
+        } else {
+          // No seat selected for this passenger (e.g., infant) - still need pricing entry
+          seatPricingsForSingleFlight.push({
+            flightId: flightDetails.flightId,
+            seatCode: null,
+            seatClass: 'ECONOMY',
+            farePrice: 0, // Infants typically don't pay for seats
+            fareId: null
+          });
+        }
+      }
+      
+      if (seatPricingsForSingleFlight.length > 0) {
+        seatPricingByFlight.push(seatPricingsForSingleFlight);
+      }
     }
 
     // Prepare passenger data correctly based on seat assignments per flight
@@ -1263,11 +1399,11 @@ const Booking = () => {
       if (hasConnectingFlights()) {
         // Create mapping of seats by flight for this passenger
         const seatsByFlight = {};
-        
+
         // Assign seats for each flight to this passenger (if available)
         flightDetailsArray.forEach((flight, flightIndex) => {
           const seatsForThisFlight = selectedSeatsByFlight[flightIndex] || [];
-          
+
           // Assign a seat to this passenger if one exists at their index
           if (index < seatsForThisFlight.length) {
             const seatForPassenger = seatsForThisFlight[index];
@@ -1279,11 +1415,16 @@ const Booking = () => {
             }
           }
         });
-        
+
         return {
           ...p,
           seatsByFlight,
-          passengerType: p.passengerType
+          passengerType: p.passengerType,
+          // Add contact info to the first passenger
+          ...(index === 0 && {
+            email: contactInfo.email,
+            phone: contactInfo.phone
+          })
         };
       } else {
         // Single flight - simpler format
@@ -1291,14 +1432,19 @@ const Booking = () => {
           ...p,
           seatNumber: selectedSeats[index] || null,
           passengerType: p.passengerType,
-          fareClass: selectedSeats[index] ? getSeatClass(selectedSeats[index]) : 'ECONOMY'
+          fareClass: selectedSeats[index] ? getSeatClass(selectedSeats[index]) : 'ECONOMY',
+          // Add contact info to the first passenger
+          ...(index === 0 && {
+            email: contactInfo.email,
+            phone: contactInfo.phone
+          })
         };
       }
     });
-    
+
     // Determine the primary fare class for the booking (for backend validation)
     let selectedFareName = 'ECONOMY'; // Default
-    
+
     if (hasConnectingFlights()) {
       // For multi-segment, find the highest fare class across all selected seats
       const allSeatClasses = [];
@@ -1309,7 +1455,7 @@ const Booking = () => {
           allSeatClasses.push(seatClass);
         });
       });
-      
+
       // Determine the highest fare class
       if (allSeatClasses.includes('FIRST') || allSeatClasses.includes('FIRST_CLASS')) {
         selectedFareName = 'FIRST_CLASS';
@@ -1332,17 +1478,66 @@ const Booking = () => {
       }
     }
 
-    console.log('Determined selectedFareName:', selectedFareName);
-
-    return {
+    // Log seat selection data for debugging
+    console.log('[BOOKING] Prepared seat selections:', seatSelections);
+    
+    // If we have connecting flights, ensure all seat data is properly formatted
+    if (hasConnectingFlights()) {
+      console.log('[BOOKING] Multi-segment booking with seat selections:', Object.keys(seatSelections).length);
+      // Validate that we have the correct flight IDs as keys and seat arrays as values
+      Object.entries(seatSelections).forEach(([flightId, seats]) => {
+        console.log(`[BOOKING] Flight ${flightId} has ${seats?.length || 0} seat codes:`, seats);
+      });
+    } else {
+      console.log('[BOOKING] Single-segment booking with seat selections:', 
+        flightIds[0], selectedSeats.length > 0 ? selectedSeats : 'NO SEATS');
+    }
+    
+    // Prepare standard seat selections structure for backend compatibility
+    let seatSelectionsArray = [];
+    if (hasConnectingFlights()) {
+      // For multi-segment, convert the seat selections to the formal DTO structure if needed
+      Object.entries(seatSelections).forEach(([flightId, seats]) => {
+        if (seats && Array.isArray(seats)) {
+          seats.forEach((seat, passengerIndex) => {
+            if (seat) {
+              seatSelectionsArray.push({
+                seatCode: seat,
+                passengerIndex,
+                selectedFareName: selectedFareName
+              });
+            }
+          });
+        }
+      });
+    } else {
+      // For single segment
+      selectedSeats.forEach((seat, passengerIndex) => {
+        if (seat) {
+          seatSelectionsArray.push({
+            seatCode: seat,
+            passengerIndex,
+            selectedFareName: selectedFareName
+          });
+        }
+      });
+    }
+    
+    console.log('[BOOKING] Prepared seat selections array:', seatSelectionsArray);
+    
+    const bookingDataToSend = {
       flightIds: flightIds,
+      // For single-segment bookings, also include flightId for backend compatibility
+      ...(flightIds.length === 1 && { flightId: flightIds[0] }),
       passengers: passengerData,
-      contactInfo,
-      selectedSeats: hasConnectingFlights() ? selectedSeatsByFlight : selectedSeats,
-      selectedFareName: selectedFareName, // Add the required field
+      // Include both formats to ensure backend compatibility
+      selectedSeatsByFlight: seatSelections, // Map of flightId to seat codes array
+      seatSelections: seatSelectionsArray, // Array of SeatSelectionDTO compatible objects
+      selectedFareName: selectedFareName,
       paymentMethod,
       voucherCode: selectedVoucher?.code || null,
-      totalAmount: calculateTotal(),
+      voucherDiscount: selectedVoucher ? priceBreakdown.discount : 0,
+      totalAmount: priceBreakdown.total, // Send final total including taxes and discounts
       seatPricingByFlight,
       passengerBreakdown: {
         adults: adultCount,
@@ -1350,6 +1545,8 @@ const Booking = () => {
         infants: infantCount
       },
       isConnectingFlight: hasConnectingFlights(),
+      // Change booking type to match backend enum
+      bookingType: hasConnectingFlights() ? 'MULTI_SEGMENT' : 'STANDARD',
       flightSegments: allFlightDetails.map(flight => ({
         flightId: flight.flightId,
         flightNumber: flight.flightNumber || flight.flightCode,
@@ -1358,8 +1555,11 @@ const Booking = () => {
         departureTime: flight.departureDateTime || flight.departureTime,
         arrivalTime: flight.arrivalDateTime || flight.estimatedArrivalTime
       })),
-      priceBreakdown: priceBreakdown
+      priceBreakdown: priceBreakdown,
+      baggageAddons: prepareBaggageAddons()
     };
+
+    return bookingDataToSend;
   };
 
   // Loading state
@@ -1393,33 +1593,22 @@ const Booking = () => {
   // Quick summary component for all steps
   const renderQuickSummary = () => (
     <div className={styles.quickSummary}>
-      <div className={styles.summaryItem}>
-        <span>Flight{hasConnectingFlights() ? 's' : ''}:</span>
-        <span>
-          {hasConnectingFlights() ?
-            `${flightIds.length} segments (${formatMultiFlightRoute() || 'Multi-city'})` :
-            flightDetails?.flightNumber || 'Loading...'
-          }
-        </span>
-      </div>
-      <div className={styles.summaryItem}>
-        <span>Passengers:</span>
-        <span>
-          {adultCount > 0 && `${adultCount} Adult${adultCount > 1 ? 's' : ''}`}
-          {childCount > 0 && `${adultCount > 0 ? ', ' : ''}${childCount} Child${childCount > 1 ? 'ren' : ''}`}
-          {infantCount > 0 && `${(adultCount + childCount) > 0 ? ', ' : ''}${infantCount} Infant${infantCount > 1 ? 's' : ''}`}
-        </span>
-      </div>
-      {selectedSeats.length > 0 && (
+      {(Object.values(selectedSeatsByFlight).flat().length > 0 || selectedSeats.length > 0) && (
         <div className={styles.summaryItem}>
           <span>Seats:</span>
-          <span>{selectedSeats.join(', ')}</span>
+          <span>
+            {hasConnectingFlights()
+              ? Object.entries(selectedSeatsByFlight)
+                .filter(([flightIndex, seats]) => seats.length > 0)
+                .map(([flightIndex, seats]) => {
+                  return `Flight ${parseInt(flightIndex) + 1}: ${seats.join(', ')}`;
+                })
+                .join(' | ')
+              : selectedSeats.join(', ')
+            }
+          </span>
         </div>
       )}
-      <div className={styles.summaryItem}>
-        <span>Total:</span>
-        <span className={styles.summaryPrice}>{formatVND(calculateTotal())}</span>
-      </div>
     </div>
   );
 
@@ -1562,10 +1751,18 @@ const Booking = () => {
                   })()}
                 </div>
 
+
                 <p className={styles.seatSelectionNote}>
                   <Info size={16} />
                   <span>Select seats for this flight segment. Your fare will be calculated based on the seat class you choose.</span>
                 </p>
+              </div>
+              <div className={styles.flightNavigation}>
+                {(selectedSeatsByFlight[currentFlightTab] || []).length >= (adultCount + childCount) && currentFlightTab < flightDetailsArray.length - 1 && (
+                  <button onClick={handleGoToNextFlight} className={styles.continueButton}>
+                    Select Seats for Next Flight <ArrowRight size={18} />
+                  </button>
+                )}
               </div>
 
               {flightDetailsArray[currentFlightTab] && (
@@ -1578,6 +1775,7 @@ const Booking = () => {
                   selectedFareClass="all"
                   disabled={false}
                   allowFlexibleSelection={true}
+                  enableRealTimeUpdates={true}
                   flightDetails={{
                     ...flightDetailsArray[currentFlightTab],
                     availableFares: flightDetailsArray[currentFlightTab].availableFares || availableFares
@@ -1749,6 +1947,7 @@ const Booking = () => {
                 selectedFareClass="all"
                 disabled={false}
                 allowFlexibleSelection={true}
+                enableRealTimeUpdates={true}
                 flightDetails={{
                   ...flightDetails,
                   availableFares: flightDetails.availableFares || availableFares
@@ -1814,7 +2013,6 @@ const Booking = () => {
                 <h4>
                   <User size={20} />
                   Passenger {index + 1}
-                  {selectedSeats[index] && ` - Seat ${selectedSeats[index]}`}
                 </h4>
                 <div className={styles.passengerTypeBadge} data-type={passenger.passengerType.toLowerCase()}>
                   {passenger.passengerType === 'ADULT' ? 'Adult (12+ years)' :
@@ -1846,20 +2044,23 @@ const Booking = () => {
             </div>
 
             <div className={styles.formGrid}>
-              <div className={styles.inputGroup}>
-                <label>Title *</label>
-                <select
-                  value={passenger.title}
-                  onChange={(e) => handlePassengerChange(index, 'title', e.target.value)}
-                  className={styles.select}
-                >
-                  <option value="MR">Mr</option>
-                  <option value="MS">Ms</option>
-                  <option value="MRS">Mrs</option>
-                  <option value="MISS">Miss</option>
-                  <option value="MST">Master</option>
-                </select>
-              </div>
+              {/* Title - Only for Adults and Children, not Infants */}
+              {passenger.passengerType !== 'INFANT' && (
+                <div className={styles.inputGroup}>
+                  <label>Title *</label>
+                  <select
+                    value={passenger.title}
+                    onChange={(e) => handlePassengerChange(index, 'title', e.target.value)}
+                    className={styles.select}
+                  >
+                    <option value="MR">Mr</option>
+                    <option value="MS">Ms</option>
+                    <option value="MRS">Mrs</option>
+                    <option value="MISS">Miss</option>
+                    <option value="MST">Master</option>
+                  </select>
+                </div>
+              )}
 
               <div className={styles.inputGroup}>
                 <label>First Name *</label>
@@ -1925,7 +2126,7 @@ const Booking = () => {
                   <option value="MALE">Male</option>
                   <option value="FEMALE">Female</option>
                   <option value="OTHER">Other</option>
-                </select>
+                               </select>
               </div>
 
               <div className={styles.inputGroup}>
@@ -1935,17 +2136,11 @@ const Booking = () => {
                   onChange={(e) => handlePassengerChange(index, 'nationality', e.target.value)}
                   className={styles.select}
                 >
-                  <option value="VN">Vietnam</option>
-                  <option value="US">United States</option>
-                  <option value="GB">United Kingdom</option>
-                  <option value="JP">Japan</option>
-                  <option value="KR">South Korea</option>
-                  <option value="CN">China</option>
-                  <option value="SG">Singapore</option>
-                  <option value="MY">Malaysia</option>
-                  <option value="TH">Thailand</option>
-                  <option value="AU">Australia</option>
-                  <option value="OTHER">Other</option>
+                  {countries.map(country => (
+                    <option key={country.code} value={country.code}>
+                      {country.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -1975,18 +2170,19 @@ const Booking = () => {
                 </div>
               )}
 
-              {/* Always show passport number field, but make it optional */}
-              <div className={styles.inputGroup}>
-                <label>Passport Number {passenger.nationality !== 'VN' ? '*' : ''}</label>
-                <input
-                  type="text"
-                  value={passenger.passportNumber}
-                  onChange={(e) => handlePassengerChange(index, 'passportNumber', e.target.value)}
-                  className={styles.input}
-                  placeholder="Enter passport number"
-                  required={passenger.nationality !== 'VN'}
-                />
-              </div>
+              {/* Passport Number - Only for Adults and Children, not required for Infants */}
+              {passenger.passengerType !== 'INFANT' && (
+                <div className={styles.inputGroup}>
+                  <label>Passport Number</label>
+                  <input
+                    type="text"
+                    value={passenger.passportNumber}
+                    onChange={(e) => handlePassengerChange(index, 'passportNumber', e.target.value)}
+                    className={styles.input}
+                    placeholder="Enter passport number"
+                  />
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -2024,116 +2220,110 @@ const Booking = () => {
     </div>
   );
 
+  // Step 3: Baggage Selection
+  const renderBaggageSelection = () => (
+    <div className={styles.stepContent}>
+      <BaggageSelection
+        passengers={passengers}
+        flightDetails={hasConnectingFlights() ? allFlightDetails : flightDetails}
+        isMultiSegment={hasConnectingFlights()}
+        onBaggageChange={handleBaggageChange}
+        initialBaggageSelections={baggageSelections}
+      />
+    </div>
+  );
+
   // Step 4: Payment
   const renderPayment = () => (
-  <div className={styles.stepContent}>
-    <div className={styles.paymentContainer}>
-      <div className={styles.paymentHeader}>
-        <CreditCard size={24} />
-        <span>Payment Information</span>
-      </div>
+    <div className={styles.stepContent}>
+      <div className={styles.paymentContainer}>
+        <div className={styles.paymentHeader}>
+          <CreditCard size={24} />
+          <span>Payment Information</span>
+        </div>
 
-      {/* Voucher Section */}
-      <div className={styles.voucherSection}>
-        <h3>
-          <Gift size={20} />
-          Discount Voucher (Optional)
-        </h3>
-        <div className={styles.voucherContainer}>
-          <div className={styles.voucherInput}>
-            <input
-              type="text"
-              value={voucherCode}
-              onChange={(e) => handleVoucherCodeChange(e.target.value)}
-              className={styles.input}
-              placeholder="Enter voucher code"
-            />
-            {selectedVoucher && (
-              <div className={styles.voucherApplied}>
-                <CheckCircle size={16} color="green" />
-                <span>{selectedVoucher.name} applied!</span>
+        {/* === VOUCHER SECTION === */}
+        <div className={styles.paymentSection}>
+          <VoucherSelection
+            userId={user?.id}
+            bookingAmount={priceBreakdown.totalWithTaxes}
+            onVoucherApplied={handleVoucherApplied}
+            onVoucherRemoved={handleVoucherRemoved}
+            selectedVoucher={selectedVoucher}
+            disabled={false}
+          />
+        </div>
+
+        {/* === PAYMENT METHOD SECTION === */}
+        <div className={styles.paymentSection}>
+          <div className={styles.paymentSectionHeader}>
+            <CreditCard size={20} />
+            <span>Payment Method</span>
+          </div>
+          <div className={styles.paymentSectionContent}>
+            <div className={styles.paymentMethods}>
+              <label htmlFor="vnpay" className={`${styles.paymentMethodOption} ${styles.active}`}>
+                <input
+                  type="radio"
+                  id="vnpay"
+                  name="paymentMethod"
+                  value="VNPAY_BANKTRANSFER"
+                  checked={true}
+                  readOnly
+                />
+                <div className={styles.paymentMethodDetails}>
+                  <span className={styles.paymentMethodName}>VNPay Bank Transfer</span>
+                  <p className={styles.paymentNote}>
+                    You will be redirected to complete payment after booking confirmation.
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* === BOOKING SUMMARY SECTION === */}
+        <div className={styles.paymentSection}>
+          <div className={styles.paymentSectionHeader}>
+            <CheckCircle size={20} />
+            <span>Booking Summary</span>
+          </div>
+          <div className={styles.paymentSectionContent}>
+            <div className={styles.orderDetail}>
+              <div className={styles.orderDetailLabel}>Base Fare (Seats + Infants)</div>
+              <div className={styles.orderDetailValue}>{formatVND(priceBreakdown.subtotal + priceBreakdown.infantTotal)}</div>
+            </div>
+            {priceBreakdown.baggageTotal > 0 && (
+              <div className={styles.orderDetail}>
+                <div className={styles.orderDetailLabel}>Baggage Add-ons</div>
+                <div className={styles.orderDetailValue}>{formatVND(priceBreakdown.baggageTotal)}</div>
               </div>
             )}
-          </div>
-          {loadingVouchers ? (
-            <div className={styles.loadingVouchers}>
-              <div className={styles.loadingSpinner}></div>
-              Loading your vouchers...
-            </div>
-          ) : availableVouchers.length > 0 ? (
-            <div className={styles.availableVouchers}>
-              <h4>Your Available Vouchers:</h4>
-              <div className={styles.voucherList}>
-                {availableVouchers.map((voucher) => (
-                  <div
-                    key={voucher.code}
-                    className={`${styles.voucherCard} ${selectedVoucher?.code === voucher.code ? styles.selected : ''}`}
-                    onClick={() => handleVoucherSelect(voucher)}
-                  >
-                    <div className={styles.voucherInfo}>
-                      <div className={styles.voucherCode}>{voucher.code}</div>
-                      <div className={styles.voucherName}>{voucher.name}</div>
-                      <div className={styles.voucherDiscount}>
-                        {voucher.discountPercentage}% off
-                        {voucher.maximumDiscountAmount && (
-                          <span> (max {formatVND(voucher.maximumDiscountAmount)})</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+            {selectedVoucher && priceBreakdown.discount > 0 && (
+              <div className={`${styles.orderDetail} ${styles.discount}`}>
+                <div className={styles.orderDetailLabel}>Voucher Discount</div>
+                <div className={styles.orderDetailValue}>-{formatVND(priceBreakdown.discount)}</div>
               </div>
+            )}
+            <div className={styles.orderDetail}>
+              <div className={styles.orderDetailLabel}>Taxes & Fees (10%)</div>
+              <div className={styles.orderDetailValue}>{formatVND(priceBreakdown.taxesAndFees)}</div>
             </div>
-          ) : (
-             <div className={styles.noVouchersMessage}>
-                <Info size={16} />
-                No vouchers available at this time
-             </div>
-          )}
-        </div>
-      </div>
-
-      <h3 className={styles.paymentSectionTitle}>Payment Method</h3>
-      <div className={styles.paymentMethods}>
-        {/* Payment method options can remain as they are */}
-      </div>
-
-      <div className={styles.orderSummary}>
-        <div className={styles.orderSummaryHeader}>
-          <CheckCircle size={16} />
-          <span>Booking Summary</span>
-        </div>
-        
-        {/* CORRECTED: Using priceBreakdown object directly */}
-        <div className={styles.orderDetail}>
-          <div className={styles.orderDetailLabel}>Base Fare (Seats + Infants)</div>
-          <div className={styles.orderDetailValue}>{formatVND(priceBreakdown.subtotal + priceBreakdown.infantTotal)}</div>
-        </div>
-        <div className={styles.orderDetail}>
-          <div className={styles.orderDetailLabel}>Taxes & Fees</div>
-          <div className={styles.orderDetailValue}>{formatVND(priceBreakdown.taxesAndFees)}</div>
-        </div>
-        {selectedVoucher && priceBreakdown.discount > 0 && (
-          <div className={styles.orderDetail}>
-            <div className={styles.orderDetailLabel} style={{color: 'var(--success-dark)'}}>Voucher Discount</div>
-            <div className={styles.orderDetailValue} style={{color: 'var(--success-dark)'}}>-{formatVND(priceBreakdown.discount)}</div>
+            <div className={styles.orderTotal}>
+              <div className={styles.orderTotalLabel}>Total</div>
+              <div className={styles.orderTotalValue}>{formatVND(priceBreakdown.total)}</div>
+            </div>
           </div>
-        )}
-        <div className={styles.orderTotal}>
-          <div className={styles.orderTotalLabel}>Total</div>
-          <div className={styles.orderTotalValue}>{formatVND(priceBreakdown.total)}</div>
         </div>
-      </div>
 
-      <div className={styles.securityBadge}>
-        <Shield size={16} />
-        <span>All payments are secure and encrypted.</span>
+        <div className={styles.securityBadge}>
+          <Shield size={16} />
+          <span>All payments are secure and encrypted.</span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 
-  // Render step content
   // Render step content
   const renderStepContent = () => {
     switch (currentStep) {
@@ -2142,6 +2332,8 @@ const Booking = () => {
       case 2:
         return renderPassengerInfo();
       case 3:
+        return renderBaggageSelection();
+      case 4:
         return renderPayment();
       default:
         return renderSeatSelection();
@@ -2441,29 +2633,37 @@ const Booking = () => {
                     </div>
                   )}
 
+                  {/* Baggage add-ons */}
+                  {priceBreakdown.baggageTotal > 0 && (
+                    <div className={styles.priceItem}>
+                      <span className={styles.priceLabel}>Baggage Add-ons</span>
+                      <span className={styles.priceValue}>{formatVND(priceBreakdown.baggageTotal)}</span>
+                    </div>
+                  )}
+
                   <div className={styles.priceDivider}></div>
 
                   {/* Subtotal */}
                   <div className={styles.priceItem}>
                     <span className={styles.priceLabel}>Subtotal</span>
-                    <span className={styles.priceValue}>{formatVND(priceBreakdown.subtotal + priceBreakdown.infantTotal)}</span>
-                  </div>
-
-                  {/* Taxes and fees */}
-                  <div className={styles.priceItem}>
-                    <span className={styles.priceLabel}>Taxes & Fees (10%)</span>
-                    <span className={styles.priceValue}>{formatVND(priceBreakdown.taxesAndFees)}</span>
+                    <span className={styles.priceValue}>{formatVND(priceBreakdown.subtotal + priceBreakdown.infantTotal + (priceBreakdown.baggageTotal || 0))}</span>
                   </div>
 
                   {/* Discount */}
                   {selectedVoucher && priceBreakdown.discount > 0 && (
                     <div className={styles.priceItem} style={{ color: 'var(--success-dark)' }}>
                       <span className={styles.priceLabel}>
-                        Discount ({selectedVoucher.discountPercentage}%)
+                        Voucher Discount ({selectedVoucher.code})
                       </span>
                       <span className={styles.priceValue}>-{formatVND(priceBreakdown.discount)}</span>
                     </div>
                   )}
+
+                  {/* Taxes & Fees */}
+                  <div className={styles.priceItem}>
+                    <span className={styles.priceLabel}>Taxes & Fees (10%)</span>
+                    <span className={styles.priceValue}>{formatVND(priceBreakdown.taxesAndFees)}</span>
+                  </div>
                 </div>
 
                 <div className={styles.totalPrice}>

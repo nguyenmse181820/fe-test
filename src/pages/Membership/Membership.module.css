@@ -1,0 +1,110 @@
+.membershipContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.membershipHeader {
+  margin-bottom: 2rem;
+}
+
+.membershipCard {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 1rem;
+  padding: 2rem;
+  color: white;
+  margin-bottom: 2rem;
+}
+
+.tierIcon {
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1rem;
+}
+
+.pointsDisplay {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.rewardCard {
+  transition: transform 0.2s ease-in-out;
+}
+
+.rewardCard:hover {
+  transform: translateY(-2px);
+}
+
+.voucherCode {
+  font-family: 'Courier New', monospace;
+  background-color: #f8f9fa;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  border: 1px dashed #dee2e6;
+}
+
+.activityItem {
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.activityItem:last-child {
+  border-bottom: none;
+}
+
+.statusBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.statusBadge.active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.statusBadge.expired {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.statusBadge.used {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.loadingSpinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem;
+  color: #6c757d;
+}
+
+.emptyState svg {
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+  .membershipContainer {
+    padding: 1rem;
+  }
+  
+  .membershipCard {
+    padding: 1.5rem;
+  }
+  
+  .pointsDisplay {
+    font-size: 2rem;
+  }
+}

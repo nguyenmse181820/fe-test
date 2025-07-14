@@ -27,8 +27,8 @@ const MyRefundRequests = () => {
   const fetchMyRefundRequests = async () => {
     try {
       setLoading(true);
-      let url = '/api/refund-requests';
-      if (searchTerm) url = `/api/refund-requests/booking/${searchTerm}`;
+      let url = '/booking-service/api/refund-requests';
+      if (searchTerm) url = `/booking-service/api/refund-requests/booking/${searchTerm}`;
       const response = await axiosInstance.get(url);
       setRefundRequests(response.data || []);
     } catch (error) {
@@ -40,7 +40,7 @@ const MyRefundRequests = () => {
 
   const fetchSingleRefundRequest = async (refundRequestId) => {
     try {
-      const response = await axiosInstance.get(`/api/refund-requests/${refundRequestId}`);
+      const response = await axiosInstance.get(`/booking-service/api/refund-requests/${refundRequestId}`);
       setSingleRequest(response.data);
     } catch (error) {
       toast.error('Failed to fetch refund request details');
@@ -51,7 +51,7 @@ const MyRefundRequests = () => {
     e.preventDefault();
     setCreating(true);
     try {
-      await axiosInstance.post('/api/refund-requests/create', createForm);
+      await axiosInstance.post('/booking-service/api/refund-requests/create', createForm);
       toast.success('Refund request submitted');
       setShowCreateModal(false);
       setCreateForm({ bookingReference: '', reason: '', amount: '' });

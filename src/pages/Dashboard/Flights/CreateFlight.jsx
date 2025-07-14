@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../utils/axios';
 import axios from 'axios';
-import { AlertCircle, CheckCircle, Clock, Loader2, Plane, X, Plus, Globe } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Loader2, Plane, X, Plus, Globe, Copy, ChevronDown, ChevronUp } from 'lucide-react';
 import { convertAdminTimeToUTC, getMultiTimezoneDisplay, getUserTimezone, formatTimeWithTimezone } from '../../../utils/timezone';
 
 // Import styles
@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +56,8 @@ const CreateFlight = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitError, setSubmitError] = useState(null);
+  const [detailedError, setDetailedError] = useState(null);
+  const [showErrorDetails, setShowErrorDetails] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [airports, setAirports] = useState([]);
   const [benefits, setBenefits] = useState([]);
@@ -241,6 +245,8 @@ const CreateFlight = () => {
     // Clear submit error when user makes changes
     if (submitError) {
       setSubmitError(null);
+      setDetailedError(null);
+      setShowErrorDetails(false);
     }
 
     setFormData(prev => {
@@ -344,6 +350,8 @@ const CreateFlight = () => {
     // Clear submit error when user makes changes
     if (submitError) {
       setSubmitError(null);
+      setDetailedError(null);
+      setShowErrorDetails(false);
     }
 
     setFormData(prev => ({
@@ -440,6 +448,8 @@ const CreateFlight = () => {
 
     // Clear previous errors
     setSubmitError(null);
+    setDetailedError(null);
+    setShowErrorDetails(false);
     setFieldErrors({});
 
     // Validate all fields
@@ -464,17 +474,20 @@ const CreateFlight = () => {
     try {
       setLoading(true);
       const requestData = {
-        ...formData,
-        routeId: routeId, // Add the route ID to the request
+        code: formData.code,
+        aircraftId: formData.aircraftId,
+        routeId: routeId,
+        departureTime: formData.departureTime,
         seatClassFares: formData.seatClassFares.map(fare => {
           // Always make sure we have a valid fare type based on the seat class
           const validFareType = fare.fareType || getFareTypeFromSeatClass(fare.seatClassName);
           
           return {
-            ...fare,
+            fareType: validFareType,
             minPrice: parseFloat(fare.minPrice),
             maxPrice: parseFloat(fare.maxPrice),
-            fareType: validFareType
+            name: fare.name,
+            benefits: fare.benefits || []
           };
         })
       };
@@ -489,20 +502,62 @@ const CreateFlight = () => {
     } catch (err) {
       console.error('Error creating flight:', err);
 
-      // Handle different types of errors
+      // Extract detailed error information
+      const errorDetails = {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        message: err.response?.data?.message || err.message,
+        timestamp: new Date().toISOString(),
+        endpoint: '/flight-service/api/v1/fs/flights',
+        method: 'POST'
+      };
+
+      // Add validation errors if they exist
+      if (err.response?.data?.errors) {
+        errorDetails.validationErrors = err.response.data.errors;
+      }
+
+      // Add stack trace for 500 errors (if available)
+      if (err.response?.status >= 500 && err.response?.data?.trace) {
+        errorDetails.stackTrace = err.response.data.trace;
+      }
+
+      setDetailedError(errorDetails);
+
+      // Handle different types of errors with user-friendly messages
       if (err.response?.status === 400) {
         // Bad request - show specific error message
         const errorMessage = err.response.data?.message || 'Invalid data provided';
-        setSubmitError(errorMessage);
+        
+        // Check for validation errors
+        if (err.response.data?.errors && Array.isArray(err.response.data.errors)) {
+          const validationMessages = err.response.data.errors.map(error => {
+            if (error.field && error.defaultMessage) {
+              return `${error.field}: ${error.defaultMessage}`;
+            } else if (error.message) {
+              return error.message;
+            }
+            return JSON.stringify(error);
+          }).join('; ');
+          setSubmitError(`Validation failed: ${validationMessages}`);
+        } else {
+          setSubmitError(errorMessage);
+        }
+      } else if (err.response?.status === 401) {
+        setSubmitError('Authentication failed. Please log in again.');
+      } else if (err.response?.status === 403) {
+        setSubmitError('You do not have permission to create flights.');
+      } else if (err.response?.status === 404) {
+        setSubmitError('Flight service not found. Please contact system administrator.');
       } else if (err.response?.status >= 500) {
         // Server error
-        setSubmitError('Server error occurred. Please try again later.');
-      } else if (err.code === 'NETWORK_ERROR') {
+        setSubmitError('Server error occurred. Please try again later or contact support if the problem persists.');
+      } else if (err.code === 'NETWORK_ERROR' || !err.response) {
         // Network error
         setSubmitError('Network error. Please check your connection and try again.');
       } else {
         // Generic error
-        setSubmitError(err.message || 'Failed to create flight. Please try again.');
+        setSubmitError(`Failed to create flight: ${err.response?.data?.message || err.message || 'Unknown error occurred'}`);
       }
     } finally {
       setLoading(false);
@@ -701,14 +756,91 @@ const CreateFlight = () => {
         <h1 className="text-3xl font-bold">Create New Flight</h1>
       </div>
 
-      {/* Global submit error */}
+      {/* Enhanced error display */}
       {submitError && (
-        <div className="mb-6 rounded-md bg-destructive/10 p-4 text-destructive">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5" />
-            <span className="font-medium">{submitError}</span>
-          </div>
-        </div>
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error Creating Flight</AlertTitle>
+          <AlertDescription className="mt-2">
+            <div className="space-y-3">
+              <p>{submitError}</p>
+              
+              {detailedError && (
+                <Collapsible open={showErrorDetails} onOpenChange={setShowErrorDetails}>
+                  <CollapsibleTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-auto p-0 text-sm text-destructive hover:text-destructive/80"
+                    >
+                      <span className="flex items-center gap-1">
+                        {showErrorDetails ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                        {showErrorDetails ? 'Hide' : 'Show'} technical details
+                      </span>
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="rounded-md bg-muted p-3 text-sm">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">Error Details:</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(JSON.stringify(detailedError, null, 2));
+                            }}
+                            className="h-auto p-1 text-xs"
+                            title="Copy error details"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        
+                        <div className="grid gap-2 text-xs">
+                          {detailedError.status && (
+                            <div>
+                              <span className="font-medium">Status:</span> {detailedError.status} {detailedError.statusText}
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-medium">Endpoint:</span> {detailedError.method} {detailedError.endpoint}
+                          </div>
+                          <div>
+                            <span className="font-medium">Timestamp:</span> {new Date(detailedError.timestamp).toLocaleString()}
+                          </div>
+                          {detailedError.validationErrors && (
+                            <div>
+                              <span className="font-medium">Validation Errors:</span>
+                              <pre className="mt-1 whitespace-pre-wrap text-xs">
+                                {JSON.stringify(detailedError.validationErrors, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="mt-3 rounded border bg-background p-2">
+                          <div className="font-medium text-xs mb-1">Full Error Response:</div>
+                          <pre className="text-xs overflow-x-auto whitespace-pre-wrap break-words">
+                            {JSON.stringify(detailedError, null, 2)}
+                          </pre>
+                        </div>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+              
+              <div className="text-xs text-muted-foreground">
+                If this error persists, please contact support with the technical details above.
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
       )}
 
       <form onSubmit={handleSubmit}>

@@ -2,9 +2,10 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
-  background: white;
+  background: linear-gradient(to bottom, #ffffff, #f8fafc);
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
 }
 
 .loading, .error {
@@ -41,21 +42,23 @@
 }
 
 .aircraftBody {
-  background: linear-gradient(to bottom, #f8fafc, #e2e8f0);
-  border: 2px solid #cbd5e1;
+  background: linear-gradient(to bottom, #f1f5f9, #e2e8f0, #cbd5e1);
+  border: 2px solid #94a3b8;
   border-radius: 50px;
   padding: 2rem 1rem;
   position: relative;
   margin-bottom: 2rem;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .aircraftNose {
   width: 60px;
   height: 30px;
-  background: #64748b;
+  background: linear-gradient(to bottom, #64748b, #475569);
   border-radius: 30px 30px 0 0;
   margin: 0 auto 2rem;
   position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .aircraftNose::before {
@@ -66,16 +69,18 @@
   transform: translateX(-50%);
   width: 20px;
   height: 20px;
-  background: #475569;
+  background: linear-gradient(to bottom, #475569, #334155);
   border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .aircraftTail {
   width: 80px;
   height: 40px;
-  background: #64748b;
+  background: linear-gradient(to bottom, #64748b, #475569);
   border-radius: 0 0 40px 40px;
   margin: 2rem auto 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .seatSection {
@@ -87,13 +92,16 @@
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
-  padding: 0 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(248, 250, 252, 0.8);
+  border-radius: 8px;
+  border: 1px solid rgba(226, 232, 240, 0.6);
 }
 
 .sectionTitle {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #374151;
+  color: #1e293b;
   margin: 0;
 }
 
@@ -153,18 +161,19 @@
 }
 
 .seat.available {
+  background: #f0fdf4;
   border-color: #10b981;
   color: #065f46;
 }
 
 .seat.available:hover {
-  background: #d1fae5;
+  background: #dcfce7;
   border-color: #059669;
 }
 
 .seat.selected {
-  background: #3b82f6;
-  border-color: #2563eb;
+  background: #10b981;
+  border-color: #059669;
   color: white;
 }
 
@@ -180,65 +189,294 @@
 }
 
 .seat.first.available {
+  background: #faf5ff;
   border-color: #8b5cf6;
+  color: #6b21a8;
+}
+
+.seat.first.available:hover {
+  background: #f3e8ff;
+  border-color: #7c3aed;
 }
 
 .seat.first.selected {
   background: #8b5cf6;
   border-color: #7c3aed;
+  color: white;
+}
+
+.seat.business {
+  border-width: 2.5px;
 }
 
 .seat.business.available {
+  background: #eff6ff;
   border-color: #3b82f6;
+  color: #1e40af;
+}
+
+.seat.business.available:hover {
+  background: #dbeafe;
+  border-color: #2563eb;
 }
 
 .seat.business.selected {
   background: #3b82f6;
   border-color: #2563eb;
+  color: white;
 }
 
 .seat.economy.available {
+  background: #f0fdf4;
   border-color: #10b981;
+  color: #065f46;
+}
+
+.seat.economy.available:hover {
+  background: #dcfce7;
+  border-color: #059669;
 }
 
 .seat.economy.selected {
   background: #10b981;
   border-color: #059669;
+  color: white;
 }
 
-/* Not available seats (outside selected fare class) */
-.seat.notAvailable {
+/* Unavailable seats (temporarily not available due to system issues) */
+.seat.unavailable {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #dc2626;
+  cursor: not-allowed;
+  opacity: 0.7;
+  position: relative;
+}
+
+.seat.unavailable::after {
+  content: '⚠';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.5rem;
+  color: #dc2626;
+}
+
+.seat.unavailable:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Enhanced occupied seat styling */
+.seat.occupied {
   background: #f3f4f6;
   border-color: #d1d5db;
   color: #9ca3af;
   cursor: not-allowed;
-  opacity: 0.5;
+  position: relative;
 }
 
-.seat.notAvailable:hover {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+.seat.occupied::after {
+  content: '✕';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.5rem;
+  color: #6b7280;
+}
+
+/* Enhanced Seat Availability Status Styles */
+.availabilityStatus {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.statusItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #6b7280;
+}
+
+.statusItem.warning {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.lastChecked {
+  font-size: 12px;
   color: #9ca3af;
 }
 
-.emptySeat {
-  width: 32px;
-  height: 32px;
+.refreshControls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 15px;
 }
 
-.seatLabel {
-  font-size: 0.625rem;
-  font-weight: 600;
+.refreshButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
+.refreshButton:hover:not(:disabled) {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* Enhanced seat styles */
+.seat.unavailable {
+  background-color: #fca5a5 !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.seat.unavailable:hover {
+  background-color: #fca5a5 !important;
+  transform: none;
+}
+
+.premiumIcon {
+  color: #f59e0b;
+  margin-left: 2px;
+}
+
+.premiumSeat {
+  position: relative;
+  border: 2px solid #f59e0b !important;
+}
+
+.premiumSeat::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  background: #f59e0b;
+  border-radius: 50%;
+}
+
+/* Legend enhancements */
+.legendSeat.unavailable {
+  background-color: #fca5a5;
+  border-color: #ef4444;
+}
+
+.legendSeat.premiumSeat {
+  background-color: #fef3c7;
+  border: 2px solid #f59e0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Selection status enhancements */
+.selectedSeatTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #dbeafe;
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-right: 8px;
+  margin-bottom: 4px;
+}
+
+.unavailableIcon {
+  color: #ef4444;
+}
+
+.removeSeat {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 4px;
+  cursor: pointer;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+}
+
+.removeSeat:hover {
+  color: #ef4444;
+}
+
+.errorMessage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #dc2626;
+  font-size: 14px;
+  margin-top: 15px;
+}
+
+/* Flexible selection info */
+.flexibleSelectionInfo {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 15px 0;
+}
+
+.infoText {
+  margin: 0 0 8px 0;
+  color: #0369a1;
+  font-size: 14px;
+}
+
+.upgradeNotice {
+  margin: 0;
+  color: #ea580c;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Legend Styling - Original Color Scheme */
 .legend {
   display: flex;
-  justify-content: center;
-  gap: 2rem;
-  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
   padding: 1rem;
-  background: #f9fafb;
+  background: #f8fafc;
   border-radius: 8px;
+  margin-top: 1rem;
 }
 
 .legendItem {
@@ -250,105 +488,46 @@
 }
 
 .legendSeat {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
+  width: 20px;
+  height: 20px;
   border: 2px solid;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
 }
 
 .legendSeat.available {
-  background: white;
+  background: #f0fdf4;
   border-color: #10b981;
 }
 
 .legendSeat.selected {
-  background: #3b82f6;
-  border-color: #2563eb;
+  background: #10b981;
+  border-color: #059669;
+  color: white;
 }
 
 .legendSeat.occupied {
   background: #f3f4f6;
   border-color: #d1d5db;
+  color: #9ca3af;
+}
+
+.legendSeat.unavailable {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #dc2626;
 }
 
 .legendSeat.premiumSeat {
-  background: linear-gradient(135deg, #fef3c7, #fbbf24);
-  border-color: #f59e0b;
-  position: relative;
-}
-
-.premiumIcon {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  font-size: 8px;
-  background: #f59e0b;
-  color: white;
-  border-radius: 50%;
-  width: 12px;
-  height: 12px;
+  background: #faf5ff;
+  border: 2px solid #8b5cf6;
+  color: #6b21a8;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.flexibleSelectionInfo {
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.infoText {
-  margin: 0 0 0.5rem 0;
-  color: #0c4a6e;
-  font-size: 0.875rem;
-}
-
-.upgradeNotice {
-  margin: 0.5rem 0 0 0;
-  color: #dc2626;
-  font-size: 0.875rem;
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
-  border-radius: 6px;
-  padding: 0.5rem;
-}
-
-.selectedSeats {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.selectedSeatTag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  background: #3b82f6;
-  color: white;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.removeSeat {
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  padding: 0;
-  margin-left: 0.25rem;
-  opacity: 0.8;
-  transition: opacity 0.2s;
-}
-
-.removeSeat:hover {
-  opacity: 1;
 }
 
 @media (max-width: 768px) {
@@ -360,6 +539,18 @@
     flex-direction: column;
     align-items: center;
     gap: 1rem;
+  }
+  
+  .availabilityStatus {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+  
+  .statusRight {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
   }
   
   .seat {

@@ -19,6 +19,7 @@ const VoucherManagement = () => {
         startDate: '',
         endDate: '',
         usageLimit: '',
+        pointsRequired: '',
         status: 'ACTIVE'
     });
     const [error, setError] = useState(null);
@@ -71,10 +72,35 @@ const VoucherManagement = () => {
             await fetchVouchers();
             handleCloseModal();
         } catch (error) {
-            const errorMessage = error.message || 'Failed to save voucher';
+            console.error('Error saving voucher:', error);
+            
+            let errorMessage = 'Failed to save voucher';
+            
+            // Handle specific API error formats
+            if (error.response?.status === 400) {
+                const responseData = error.response.data;
+                
+                // Handle format: {"statusCode":400,"error":{"pointsRequired":"Points required is required"}}
+                if (responseData?.error && typeof responseData.error === 'object') {
+                    const fieldErrors = Object.entries(responseData.error)
+                        .map(([field, message]) => `${field}: ${message}`)
+                        .join(', ');
+                    errorMessage = `Validation errors: ${fieldErrors}`;
+                } 
+                // Handle format: {"message": "Validation failed"}
+                else if (responseData?.message) {
+                    errorMessage = responseData.message;
+                }
+                // Handle format: {"statusCode":400,"message":"Invalid data"}
+                else if (responseData?.statusCode === 400 && responseData?.message) {
+                    errorMessage = responseData.message;
+                }
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
             setError(errorMessage);
             toast.error(errorMessage);
-            console.error('Error saving voucher:', error);
         } finally {
             setLoading(false);
         }
@@ -92,6 +118,7 @@ const VoucherManagement = () => {
             startDate: voucher.startDate,
             endDate: voucher.endDate,
             usageLimit: voucher.usageLimit,
+            pointsRequired: voucher.pointsRequired,
             status: voucher.status
         });
         setIsModalOpen(true);
@@ -133,6 +160,7 @@ const VoucherManagement = () => {
             startDate: '',
             endDate: '',
             usageLimit: '',
+            pointsRequired: '',
             status: 'ACTIVE'
         });
         setIsModalOpen(false);
@@ -237,6 +265,9 @@ const VoucherManagement = () => {
                             <th onClick={() => handleSort('discountPercentage')}>
                                 Discount <FaSort className={styles.sortIcon} />
                             </th>
+                            <th onClick={() => handleSort('pointsRequired')}>
+                                Points Required <FaSort className={styles.sortIcon} />
+                            </th>
                             <th onClick={() => handleSort('endDate')}>
                                 Valid Until <FaSort className={styles.sortIcon} />
                             </th>
@@ -257,6 +288,7 @@ const VoucherManagement = () => {
                                     {voucher.description}
                                 </td>
                                 <td>{voucher.discountPercentage}%</td>
+                                <td>{voucher.pointsRequired || 0} pts</td>
                                 <td>{new Date(voucher.endDate).toLocaleDateString()}</td>
                                 <td>
                                     <span className={`${styles.status} ${styles[voucher.status.toLowerCase()]}`}>
@@ -436,6 +468,20 @@ const VoucherManagement = () => {
                                             required
                                             min="1"
                                             placeholder="Enter usage limit"
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label htmlFor="pointsRequired">Points Required</label>
+                                        <input
+                                            type="number"
+                                            id="pointsRequired"
+                                            name="pointsRequired"
+                                            value={formData.pointsRequired}
+                                            onChange={handleChange}
+                                            required
+                                            min="1"
+                                            placeholder="Enter points required for redemption"
                                         />
                                     </div>
                                 </div>

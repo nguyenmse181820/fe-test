@@ -15,6 +15,8 @@ axiosInstance.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      console.log('⚠️ No token found for request:', config.url);
     }
     return config;
   },
@@ -37,7 +39,9 @@ axiosInstance.interceptors.response.use(
           }
           break;
         case 403:
-          console.error('Access denied');
+          console.error('❌ Access denied - Check user permissions and token validity');
+          console.error('Request URL:', error.config?.url);
+          console.error('Token exists:', !!localStorage.getItem('token'));
           break;
         case 404:
           console.error('Resource not found');
@@ -70,4 +74,5 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export default axiosInstance; 
+export default axiosInstance;
+export { axiosInstance as api }; 

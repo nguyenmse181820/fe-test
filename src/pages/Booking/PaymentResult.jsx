@@ -14,6 +14,7 @@ import {
   ArrowLeft, 
   HelpCircle 
 } from 'lucide-react';
+import { api } from '../../utils/axios';
 
 const PaymentResult = () => {
   const [searchParams] = useSearchParams();
@@ -21,6 +22,7 @@ const PaymentResult = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [retryLoading, setRetryLoading] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   
   const bookingReference = searchParams.get('booking');
   const errorMessage = searchParams.get('message');
@@ -33,13 +35,37 @@ const PaymentResult = () => {
     // Simulate loading delay for better UX
     const timer = setTimeout(() => {
       setLoading(false);
+      
+      // If this is a success page and we have a booking reference,
+      // verify payment status and trigger saga completion if needed
+      if (isSuccess && bookingReference) {
+        verifyPaymentCompletion();
+      }
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [isSuccess, bookingReference]);
+
+  const verifyPaymentCompletion = async () => {
+    try {
+      setVerifying(true);
+      console.log('[PAYMENT_VERIFY] Verifying payment completion for booking:', bookingReference);
+      
+      const response = await api.post(`/booking-service/api/v1/payment/verify-and-complete?bookingReference=${bookingReference}`);
+      
+      if (response.data) {
+        console.log('[PAYMENT_VERIFY] Verification response:', response.data);
+      }
+    } catch (error) {
+      console.error('[PAYMENT_VERIFY] Error verifying payment completion:', error);
+      // Don't show error to user as this is a background verification
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const handleViewBooking = () => {
-    navigate(`/booking/${bookingReference}`);
+    navigate(`/booking-details/${bookingReference}`);
   };
 
   const handleGoHome = () => {
@@ -61,7 +87,7 @@ const PaymentResult = () => {
     // Simulate loading delay
     setTimeout(() => {
       setRetryLoading(false);
-      navigate(`/booking/${bookingReference}`);
+      navigate(`/booking-details/${bookingReference}`);
     }, 1000);
   };
 
@@ -120,6 +146,15 @@ const PaymentResult = () => {
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
               Payment Successful!
             </h1>
+            
+            {/* Verification Status */}
+            {verifying && (
+              <div className="mb-4 flex items-center justify-center space-x-2 text-blue-600">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Verifying booking completion...</span>
+              </div>
+            )}
+            
             <p className="text-xl text-gray-600 mb-2">
               Your booking has been confirmed and payment processed successfully.
             </p>

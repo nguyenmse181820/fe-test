@@ -18,8 +18,24 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check if user is logged in on app start
     const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    const token = localStorage.getItem('token');
+    
+    if (savedUser && token) {
+      try {
+        const userData = JSON.parse(savedUser);
+        // If user data doesn't have id, extract it from token
+        if (!userData.id && token !== 'debug-token') {
+          const decodedToken = jwtDecode(token);
+          userData.id = decodedToken.userId;
+          localStorage.setItem('currentUser', JSON.stringify(userData));
+        }
+        setUser(userData);
+      } catch (error) {
+        console.error('Error parsing saved user data:', error);
+        // Clear invalid data
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('token');
+      }
     }
     setLoading(false);
   }, []);
@@ -31,8 +47,11 @@ export const AuthProvider = ({ children }) => {
       if (response && response.status === 200) {
         const token = response.data.data.token;
         const email = response.data.data.username;
-        const role = jwtDecode(token).role.toLowerCase();
+        const decodedToken = jwtDecode(token);
+        const role = decodedToken.role.toLowerCase();
+        const userId = decodedToken.userId;
         const userData = {
+          id: userId,
           email: email,
           role: role
         };

@@ -27,7 +27,7 @@ export function Toaster() {
           </Toast>
         );
       })}
-      <ToastViewport />
+      <ToastViewport style={{ zIndex: 1100 }}/>
     </ToastProvider>
   );
 }

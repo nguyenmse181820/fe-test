@@ -33,6 +33,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 const FlightList = () => {
   const navigate = useNavigate();
@@ -221,6 +222,64 @@ const FlightList = () => {
     const h = Math.floor(minutes / 60);
     const m = Math.round(minutes % 60);
     return `${h}h ${m}m`;
+  };
+
+  const getFareTypeColors = (fareType) => {
+    switch (fareType) {
+      case 'ECONOMY':
+        return {
+          badge: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
+          border: 'border-l-blue-400'
+        };
+      case 'BUSINESS':
+        return {
+          badge: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100',
+          border: 'border-l-purple-400'
+        };
+      case 'FIRST_CLASS':
+        return {
+          badge: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100',
+          border: 'border-l-amber-400'
+        };
+      default:
+        return {
+          badge: 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100',
+          border: 'border-l-gray-400'
+        };
+    }
+  };
+
+  const formatFareType = (fareType) => {
+    return fareType.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  const getFlightStatusColors = (status) => {
+    if (status.includes("SCHEDULED")) {
+      return {
+        variant: "outline",
+        className: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 font-semibold"
+      };
+    } else if (status.includes("IN_PROGRESS")) {
+      return {
+        variant: "outline", 
+        className: "bg-green-50 text-green-700 border-green-200 hover:bg-green-100 font-semibold"
+      };
+    } else if (status.includes("COMPLETED")) {
+      return {
+        variant: "outline",
+        className: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 font-semibold"
+      };
+    } else if (status.includes("CANCELLED")) {
+      return {
+        variant: "outline",
+        className: "bg-red-50 text-red-700 border-red-200 hover:bg-red-100 font-semibold"
+      };
+    } else {
+      return {
+        variant: "outline",
+        className: "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 font-semibold"
+      };
+    }
   };  const renderDetailsModal = () => {
     return (
       <Dialog open={detailsModalOpen} onOpenChange={isOpen => {
@@ -230,280 +289,307 @@ const FlightList = () => {
           setDetailsError(null);
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Flight Details</DialogTitle>
+        <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-y-auto">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="flex items-center gap-2">
+              <Plane className="h-5 w-5" />
+              Flight Details
+            </DialogTitle>
             <DialogDescription>
-              Detailed information about the selected flight.
+              Complete information about the selected flight including fares and seat availability.
             </DialogDescription>
           </DialogHeader>
             
           {detailsLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600 mr-2" />
-              <span>Loading flight details...</span>
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center space-y-4">
+                <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+                <p className="text-lg font-medium">Loading flight details...</p>
+                <p className="text-sm text-muted-foreground">Please wait while we fetch the latest information</p>
+              </div>
             </div>
           ) : detailsError ? (
-            <div className="bg-red-50 border border-red-200 rounded-md p-4 text-red-600">
-              <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 mr-2" />
-                <p>Error: {detailsError}</p>
-              </div>
-            </div>
+            <Card className="border-destructive">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-3 text-destructive">
+                  <AlertCircle className="h-6 w-6 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium">Failed to load flight details</p>
+                    <p className="text-sm text-muted-foreground">{detailsError}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ) : flightDetails ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Basic Flight Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium border-b pb-2">Flight Information</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <strong>Flight Code:</strong>
-                    <span>{flightDetails.flightCode}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <strong>Status:</strong>
-                    <span className="capitalize px-2 py-1 rounded text-sm bg-blue-100 text-blue-800">
-                      {flightDetails.status.replace(/_/g, ' ').toLowerCase()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <strong>Duration:</strong>
-                    <span>{formatDuration(flightDetails.flightDurationMinutes)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Aircraft Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium border-b pb-2">Aircraft</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <strong>Aircraft Code:</strong>
-                    <span>{flightDetails.aircraft.code}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <strong>Model:</strong>
-                    <span>{flightDetails.aircraft.model}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Origin Airport */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium border-b pb-2">Origin</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <strong>Airport:</strong>
-                    <span>{flightDetails.originAirport.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <strong>Code:</strong>
-                    <span>{flightDetails.originAirport.code}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <strong>City:</strong>
-                    <span>{flightDetails.originAirport.city}, {flightDetails.originAirport.country}</span>
-                  </div>
-                  <div className="space-y-2">
-                    <strong>Departure:</strong>
-                    {flightDetails.originAirport?.timezone ? (
-                      <div className="ml-4 space-y-1 text-sm">
-                        {(() => {
-                          const timezones = getMultiTimezoneDisplay(
-                            flightDetails.departureTime, 
-                            flightDetails.originAirport.timezone, 
-                            flightDetails.destinationAirport?.timezone || 'UTC'
-                          );
-                          return (
-                            <>
-                              <div className="font-medium">{timezones.user.label}: {timezones.user.time}</div>
-                              <div className="text-gray-600">{timezones.utc.label}: {timezones.utc.time}</div>
-                              <div className="text-gray-600">{timezones.origin.label}: {timezones.origin.time}</div>
-                            </>
-                          );
-                        })()}
+            <div className="space-y-6">
+              {/* Flight Overview Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>Flight {flightDetails.flightCode}</span>
+                    <Badge 
+                      variant={getFlightStatusColors(flightDetails.status).variant}
+                      className={getFlightStatusColors(flightDetails.status).className}
+                    >
+                      {flightDetails.status.replace(/_/g, ' ')}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Route Information */}
+                    <div className="space-y-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">{flightDetails.originAirport.code}</div>
+                        <div className="text-sm text-muted-foreground">{flightDetails.originAirport.name}</div>
+                        <div className="text-xs text-muted-foreground">{flightDetails.originAirport.city}, {flightDetails.originAirport.country}</div>
                       </div>
-                    ) : (
-                      <div className="ml-4 space-y-1 text-sm">
-                        <div className="font-medium">Your time: {formatTimeWithTimezone(flightDetails.departureTime, getUserTimezone(), true)}</div>
-                        <div className="text-gray-600">UTC: {formatTimeWithTimezone(flightDetails.departureTime, 'UTC', true)}</div>
+                      
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium">Departure</div>
+                        {flightDetails.originAirport?.timezone ? (
+                          <div className="space-y-1 text-sm">
+                            {(() => {
+                              const timezones = getMultiTimezoneDisplay(
+                                flightDetails.departureTime, 
+                                flightDetails.originAirport.timezone, 
+                                flightDetails.destinationAirport?.timezone || 'UTC'
+                              );
+                              return (
+                                <>
+                                  <div className="font-medium">{timezones.user.time}</div>
+                                  <div className="text-muted-foreground text-xs">{timezones.user.label}</div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        ) : (
+                          <div className="space-y-1 text-sm">
+                            <div className="font-medium">{formatTimeWithTimezone(flightDetails.departureTime, getUserTimezone(), true)}</div>
+                            <div className="text-muted-foreground text-xs">Your timezone</div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Destination Airport */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium border-b pb-2">Destination</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <strong>Airport:</strong>
-                    <span>{flightDetails.destinationAirport.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <strong>Code:</strong>
-                    <span>{flightDetails.destinationAirport.code}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <strong>City:</strong>
-                    <span>{flightDetails.destinationAirport.city}, {flightDetails.destinationAirport.country}</span>
-                  </div>
-                  <div className="space-y-2">
-                    <strong>Estimated Arrival:</strong>
-                    {flightDetails.destinationAirport?.timezone ? (
-                      <div className="ml-4 space-y-1 text-sm">
-                        {(() => {
-                          const timezones = getMultiTimezoneDisplay(
-                            flightDetails.estimatedArrivalTime, 
-                            flightDetails.originAirport?.timezone || 'UTC', 
-                            flightDetails.destinationAirport.timezone
-                          );
-                          return (
-                            <>
-                              <div className="font-medium">{timezones.user.label}: {timezones.user.time}</div>
-                              <div className="text-gray-600">{timezones.utc.label}: {timezones.utc.time}</div>
-                              <div className="text-gray-600">{timezones.destination.label}: {timezones.destination.time}</div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    ) : (
-                      <div className="ml-4 space-y-1 text-sm">
-                        <div className="font-medium">Your time: {formatTimeWithTimezone(flightDetails.estimatedArrivalTime, getUserTimezone(), true)}</div>
-                        <div className="text-gray-600">UTC: {formatTimeWithTimezone(flightDetails.estimatedArrivalTime, 'UTC', true)}</div>
-                      </div>
-                    )}
-                  </div>
-                  {flightDetails.actualArrivalTime && (
-                    <div className="space-y-2">
-                      <strong>Actual Arrival:</strong>
-                      {flightDetails.destinationAirport?.timezone ? (
-                        <div className="ml-4 space-y-1 text-sm">
-                          {(() => {
-                            const timezones = getMultiTimezoneDisplay(
-                              flightDetails.actualArrivalTime, 
-                              flightDetails.originAirport?.timezone || 'UTC', 
-                              flightDetails.destinationAirport.timezone
-                            );
-                            return (
-                              <>
-                                <div className="font-medium">{timezones.user.label}: {timezones.user.time}</div>
-                                <div className="text-gray-600">{timezones.utc.label}: {timezones.utc.time}</div>
-                                <div className="text-gray-600">{timezones.destination.label}: {timezones.destination.time}</div>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      ) : (
-                        <div className="ml-4 space-y-1 text-sm">
-                          <div className="font-medium">Your time: {formatTimeWithTimezone(flightDetails.actualArrivalTime, getUserTimezone(), true)}</div>
-                          <div className="text-gray-600">UTC: {formatTimeWithTimezone(flightDetails.actualArrivalTime, 'UTC', true)}</div>
-                        </div>
-                      )}
                     </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Seat Information - Commented out due to potential data inconsistency */}
-              {/* Note: Seat availability may not reflect real-time updates immediately after bookings */}
-              {false && (
-              <div className="space-y-4 lg:col-span-2">
-                <h3 className="text-lg font-medium text-gray-900 border-b pb-2">Seat Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-gray-50 rounded">
-                    <div className="text-2xl font-bold text-blue-600">{flightDetails.totalSeats}</div>
-                    <div className="text-sm text-gray-600">Total Seats</div>
+                    {/* Flight Duration */}
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <Clock className="h-6 w-6 text-muted-foreground" />
+                      <div className="text-lg font-medium">{formatDuration(flightDetails.flightDurationMinutes)}</div>
+                      <div className="text-sm text-muted-foreground">Flight Duration</div>
+                      <div className="text-center">
+                        <div className="text-sm font-medium">{flightDetails.aircraft.code}</div>
+                        <div className="text-xs text-muted-foreground">{flightDetails.aircraft.model}</div>
+                      </div>
+                    </div>
+
+                    {/* Destination */}
+                    <div className="space-y-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">{flightDetails.destinationAirport.code}</div>
+                        <div className="text-sm text-muted-foreground">{flightDetails.destinationAirport.name}</div>
+                        <div className="text-xs text-muted-foreground">{flightDetails.destinationAirport.city}, {flightDetails.destinationAirport.country}</div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium">
+                          {flightDetails.actualArrivalTime ? 'Actual Arrival' : 'Estimated Arrival'}
+                        </div>
+                        {flightDetails.destinationAirport?.timezone ? (
+                          <div className="space-y-1 text-sm">
+                            {(() => {
+                              const arrivalTime = flightDetails.actualArrivalTime || flightDetails.estimatedArrivalTime;
+                              const timezones = getMultiTimezoneDisplay(
+                                arrivalTime, 
+                                flightDetails.originAirport?.timezone || 'UTC', 
+                                flightDetails.destinationAirport.timezone
+                              );
+                              return (
+                                <>
+                                  <div className="font-medium">{timezones.user.time}</div>
+                                  <div className="text-muted-foreground text-xs">{timezones.user.label}</div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        ) : (
+                          <div className="space-y-1 text-sm">
+                            <div className="font-medium">
+                              {formatTimeWithTimezone(
+                                flightDetails.actualArrivalTime || flightDetails.estimatedArrivalTime, 
+                                getUserTimezone(), 
+                                true
+                              )}
+                            </div>
+                            <div className="text-muted-foreground text-xs">Your timezone</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-center p-4 bg-gray-50 rounded">
-                    <div className="text-2xl font-bold text-green-600">{flightDetails.remainingSeats}</div>
-                    <div className="text-sm text-gray-600">Available Seats</div>
-                  </div>
-                  <div className="text-center p-4 bg-gray-50 rounded">
-                    <div className="text-2xl font-bold text-red-600">{flightDetails.totalSeats - flightDetails.remainingSeats}</div>
-                    <div className="text-sm text-gray-600">Occupied Seats</div>
-                  </div>
-                </div>
-              </div>
-              )}
+                </CardContent>
+              </Card>
 
               {/* Available Fares */}
               {flightDetails.availableFares && flightDetails.availableFares.length > 0 && (
-                <div className="space-y-4 lg:col-span-2">
-                  <h3 className="text-lg font-medium border-b pb-2">Available Fares</h3>
-                  <div className="space-y-3">
-                    {flightDetails.availableFares.map((fare, index) => (
-                      <Card key={fare.id}>
-                        <CardContent className="pt-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <h4 className="font-medium">{fare.name}</h4>
-                              <div className="mt-2 space-y-1 text-sm">
-                                <div>Price Range: ${fare.minPrice} - ${fare.maxPrice}</div>
-                                <div>Total Seats: {fare.totalSeats}</div>
-                                {/* Available seats hidden due to potential data inconsistency */}
-                                {/* <div>Available: {fare.remainingSeats}</div> */}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-sm text-gray-600">
-                                <strong>Seat Range:</strong>
-                                <div className="mt-1 font-mono text-xs break-all">
-                                  {fare.seatRange}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Available Fares & Pricing</CardTitle>
+                    <CardDescription>
+                      Current fare classes and pricing information for this flight
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4">
+                      {flightDetails.availableFares.map((fare, index) => (
+                        <Card 
+                          key={fare.id} 
+                          className={`border-l-4 ${getFareTypeColors(fare.fareType).border}`}
+                        >
+                          <CardContent className="pt-4">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="font-semibold text-lg">{fare.name}</h4>
+                                  <Badge 
+                                    variant="outline"
+                                    className={`font-semibold ${getFareTypeColors(fare.fareType).badge}`}
+                                  >
+                                    {formatFareType(fare.fareType)}
+                                  </Badge>
+                                </div>
+                                <div className="space-y-1">
+                                  <div className="text-sm text-muted-foreground">Price</div>
+                                  <div className="text-xl font-bold text-primary">
+                                    {Number(fare.price).toLocaleString('vi-VN')} VND
+                                  </div>
                                 </div>
                               </div>
+                              
+                              <div className="space-y-2">
+                                <div className="text-sm text-muted-foreground">Seat Information</div>
+                                <div className="space-y-1">
+                                  <div className="flex justify-between text-sm">
+                                    <span>Total Seats:</span>
+                                    <span className="font-medium">{fare.totalSeats}</span>
+                                  </div>
+                                  <div className="flex justify-between text-sm">
+                                    <span>Seat Range:</span>
+                                    <code className="text-xs bg-muted px-1 rounded">
+                                      {fare.seats && fare.seats.length > 0 
+                                        ? `${fare.seats[0]} - ${fare.seats[fare.seats.length - 1]}` 
+                                        : 'N/A'}
+                                    </code>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <div className="text-sm text-muted-foreground">Benefits</div>
+                                {fare.benefits && fare.benefits.length > 0 ? (
+                                  <div className="space-y-1">
+                                    {fare.benefits.slice(0, 3).map((benefit, benefitIndex) => (
+                                      <div key={benefitIndex} className="flex items-center gap-2 text-sm">
+                                        <Check className="h-4 w-4 text-green-600" />
+                                        <span>{benefit.name}</span>
+                                      </div>
+                                    ))}
+                                    {fare.benefits.length > 3 && (
+                                      <div className="text-xs text-muted-foreground">
+                                        +{fare.benefits.length - 3} more benefits
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-muted-foreground">No additional benefits</div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
+
+              {/* Aircraft Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Aircraft Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Aircraft Code:</span>
+                        <span className="font-medium">{flightDetails.aircraft.code}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Model:</span>
+                        <span className="font-medium">{flightDetails.aircraft.model}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Aircraft ID:</span>
+                        <span className="font-medium text-xs font-mono">{flightDetails.aircraft.id}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Total Capacity:</span>
+                        <span className="font-medium">{flightDetails.totalSeats || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           ) : selectedFlight ? (
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <strong>Code:</strong> 
-                <span>{selectedFlight.code}</span>
-              </div>
-              <div className="flex justify-between">
-                <strong>Origin:</strong> 
-                <span>{typeof selectedFlight.origin === 'object' ? (selectedFlight.origin.code || selectedFlight.origin.name) : selectedFlight.origin}</span>
-              </div>
-              <div className="flex justify-between">
-                <strong>Destination:</strong> 
-                <span>{typeof selectedFlight.destination === 'object' ? (selectedFlight.destination.code || selectedFlight.destination.name) : selectedFlight.destination}</span>
-              </div>
-              <div className="space-y-2">
-                <strong>Departure:</strong> 
-                <div className="ml-4 space-y-1 text-sm">
-                  <div className="font-medium">Your time: {formatTimeWithTimezone(selectedFlight.departureTime, getUserTimezone(), true)}</div>
-                  <div className="text-gray-600">UTC: {formatTimeWithTimezone(selectedFlight.departureTime, 'UTC', true)}</div>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold">Flight {selectedFlight.code}</h3>
+                    <p className="text-muted-foreground">Basic information (detailed data unavailable)</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Origin:</span>
+                        <span>{typeof selectedFlight.origin === 'object' ? (selectedFlight.origin.code || selectedFlight.origin.name) : selectedFlight.origin}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Departure:</span>
+                        <span>{formatTimeWithTimezone(selectedFlight.departureTime, getUserTimezone(), true)}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Destination:</span>
+                        <span>{typeof selectedFlight.destination === 'object' ? (selectedFlight.destination.code || selectedFlight.destination.name) : selectedFlight.destination}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Arrival:</span>
+                        <span>{formatTimeWithTimezone(selectedFlight.estimatedArrivalTime, getUserTimezone(), true)}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <strong>Arrival:</strong> 
-                <div className="ml-4 space-y-1 text-sm">
-                  <div className="font-medium">Your time: {formatTimeWithTimezone(selectedFlight.estimatedArrivalTime, getUserTimezone(), true)}</div>
-                  <div className="text-gray-600">UTC: {formatTimeWithTimezone(selectedFlight.estimatedArrivalTime, 'UTC', true)}</div>
-                </div>
-              </div>
-              <div className="flex justify-between">
-                <strong>Duration:</strong> 
-                <span>{formatDuration(selectedFlight.flightDurationMinutes)}</span>
-              </div>
-              <div className="flex justify-between">
-                <strong>Status:</strong> 
-                <span className="capitalize">{selectedFlight.status.replace(/_/g, ' ').toLowerCase()}</span>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ) : (
-            <div>No flight data available</div>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center text-muted-foreground">
+                  <Plane className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No flight data available</p>
+                </div>
+              </CardContent>
+            </Card>
           )}
             
-          <DialogFooter>
+          <DialogFooter className="mt-6">
             <Button 
               variant="outline" 
               onClick={() => {
@@ -512,6 +598,7 @@ const FlightList = () => {
                 setDetailsError(null);
               }}
             >
+              <X className="h-4 w-4 mr-2" />
               Close
             </Button>
           </DialogFooter>
@@ -563,7 +650,7 @@ const FlightList = () => {
     );
   }
   return (
-    <div className="container mx-auto max-w-6xl p-6">
+    <div className="w-full">
       {renderDetailsModal()}
       
       <div className="mb-6 flex items-center justify-between">

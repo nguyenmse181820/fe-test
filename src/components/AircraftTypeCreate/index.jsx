@@ -2,12 +2,16 @@ import { useState } from 'react';
 import { Container, Form, Button, Row, Col, Card, Alert, Badge, Tab, Tabs } from 'react-bootstrap';
 import { FaCogs, FaTrash, FaPlus, FaChair } from 'react-icons/fa';
 import axiosInstance from '../../utils/axios'
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { useToast } from "@/hooks/use-toast";
 
 import AircraftDetail from "../AircraftDetail"
 
+const MAX_SEATS_PER_ROW = 12;
+const MAX_TOTAL_ROWS = 20;
+const MAX_ROW_NUMBER = 20;
+
 function AircraftTypeCreate({ onSuccess, initialData, isEditMode = false }) {
+  const { toast } = useToast();
 
   const [formData, setFormData] = useState(initialData || {
     manufacturer: 'Boeing',
@@ -78,10 +82,20 @@ function AircraftTypeCreate({ onSuccess, initialData, isEditMode = false }) {
 
   // Xử lý thay đổi khoảng trống
   const handleSpaceChange = (index, field, value) => {
-    const updatedSpaces = [...formData.spaces];
+  const updatedSpaces = [...formData.spaces];
+  
+  if (field === 'fromRow') {
+    updatedSpaces[index].fromRow = value;
+    updatedSpaces[index].toRow = value;
+  } else if (field === 'toRow') {
+    if (value !== updatedSpaces[index].fromRow) return;
+    updatedSpaces[index].toRow = value;
+  } else {
     updatedSpaces[index][field] = value;
-    setFormData(prev => ({ ...prev, spaces: updatedSpaces }));
-  };
+  }
+
+  setFormData(prev => ({ ...prev, spaces: updatedSpaces }));
+};
 
   // Thêm hạng ghế mới
   const addSeatClass = () => {
@@ -120,70 +134,187 @@ function AircraftTypeCreate({ onSuccess, initialData, isEditMode = false }) {
   };
 
   const validateForm = () => {
-    const newErrors = {};
-    const usedRowRanges = [];
+  const newErrors = {};
+  let isValid = true;
+  const usedRowRanges = [];
+  let totalRows = 0;
+  let maxRowNumber = 0;
 
-    if (!formData.model) {
-      newErrors.model = 'Model is required';
-      toast.error('Model is required');
+  // Validate basic info
+  if (!formData.model.trim()) {
+    newErrors.model = "Model is required";
+    isValid = false;
+    toast({
+      variant: "destructive",
+      title: "Validation Error",
+      description: "Model is required",
+      duration: 3000,
+    });
+  }
+
+  // Validate seat classes
+  formData.seatClasses.forEach((seatClass, index) => {
+    const keyPrefix = `seatClass-${index}`;
+    
+    if (!seatClass.class.trim()) {
+      newErrors[`${keyPrefix}-class`] = "Class is required";
+      isValid = false;
     }
 
-    // Kiểm tra các seatClass
-    formData.seatClasses.forEach((seatClass, index) => {
-      if (!seatClass.class) newErrors[`seatClass-${index}-class`] = 'Class is required';
-      if (isNaN(seatClass.fromRow) || isNaN(seatClass.toRow)) {
-        newErrors[`seatClass-${index}-rows`] = 'Row is not valid';
-      } else {
-        const from = parseInt(seatClass.fromRow);
-        const to = parseInt(seatClass.toRow);
-        
-        for (const range of usedRowRanges) {
-          if ((from >= range.from && from <= range.to) || 
-              (to >= range.from && to <= range.to) ||
-              (range.from >= from && range.from <= to)) {
-            newErrors[`seatClass-${index}-rows`] = `Rows ${from}-${to} conflict with existing rows ${range.from}-${range.to}`;
-            break;
-          }
-        }
-        
-        if (!newErrors[`seatClass-${index}-rows`]) {
-          usedRowRanges.push({ from, to, type: 'seatClass', index });
-        }
+    const fromRow = Number(seatClass.fromRow);
+    const toRow = Number(seatClass.toRow);
+    
+    if (isNaN(fromRow)) {
+      newErrors[`${keyPrefix}-fromRow`] = "From row must be a number";
+      isValid = false;
+    }
+    
+    if (isNaN(toRow)) {
+      newErrors[`${keyPrefix}-toRow`] = "To row must be a number";
+      isValid = false;
+    }
+    
+    if (!isNaN(fromRow) && !isNaN(toRow)) {
+      // Validate row number range
+      if (fromRow < 1 || fromRow > MAX_ROW_NUMBER || toRow < 1 || toRow > MAX_ROW_NUMBER) {
+        newErrors[`${keyPrefix}-rows`] = `Row must be between 1 and ${MAX_ROW_NUMBER}`;
+        isValid = false;
       }
+      
+      // Validate fromRow <= toRow
+      if (fromRow > toRow) {
+        newErrors[`${keyPrefix}-rows`] = "From row cannot be greater than to row";
+        isValid = false;
+      }
+      
+      // Calculate total rows and max row
+      if (isValid) {
+        const rowCount = toRow - fromRow + 1;
+        totalRows += rowCount;
+        maxRowNumber = Math.max(maxRowNumber, toRow);
+      }
+    }
 
-      if (!seatClass.pattern) newErrors[`seatClass-${index}-pattern`] = 'Pattern is required';
-      if (!/^\d+(?:-\d+)*$/.test(seatClass.pattern)) {
-        newErrors[`seatClass-${index}-pattern`] = 'Pattern is not valid (EX: 2-2-2, 3-4-3)';
+    // Validate pattern
+    if (!seatClass.pattern.trim()) {
+      newErrors[`${keyPrefix}-pattern`] = "Pattern is required";
+      isValid = false;
+    } else if (!/^\d+(?:-\d+)*$/.test(seatClass.pattern)) {
+      newErrors[`${keyPrefix}-pattern`] = "Pattern is not valid (EX: 2-2-2, 3-4-3)";
+      isValid = false;
+    } else {
+      const seatsPerRow = seatClass.pattern.split('-').reduce((sum, num) => sum + Number(num), 0);
+      if (seatsPerRow > MAX_SEATS_PER_ROW) {
+        newErrors[`${keyPrefix}-pattern`] = `Maximum ${MAX_SEATS_PER_ROW} seats per row (current: ${seatsPerRow})`;
+        isValid = false;
       }
-    });
-    
-    // Kiểm tra các space
-    formData.spaces.forEach((space, index) => {
-      if (!space.label) newErrors[`space-${index}-label`] = 'Label of space is required';
-      if (isNaN(space.fromRow) || isNaN(space.toRow)) {
-        newErrors[`space-${index}-rows`] = 'Row is not valid';
-      } else {
-        const from = parseInt(space.fromRow);
-        const to = parseInt(space.toRow);
-        
-        for (const range of usedRowRanges) {
-          if ((from >= range.from && from <= range.to) || 
-              (to >= range.from && to <= range.to) ||
-              (range.from >= from && range.from <= to)) {
-            newErrors[`space-${index}-rows`] = `Rows ${from}-${to} conflict with existing rows ${range.from}-${range.to} in ${range.type}`;
-            break;
-          }
-        }
-        
-        if (!newErrors[`space-${index}-rows`]) {
-          usedRowRanges.push({ from, to, type: 'space', index });
+    }
+
+    // Check for row conflicts only if rows are valid
+    if (!newErrors[`${keyPrefix}-rows`] && !isNaN(fromRow) && !isNaN(toRow)) {
+      const newRange = { from: fromRow, to: toRow, type: "seatClass", index };
+      
+      for (const existingRange of usedRowRanges) {
+        if (isRangeOverlap(newRange, existingRange)) {
+          newErrors[`${keyPrefix}-rows`] = 
+            `Rows ${fromRow}-${toRow} conflict with existing rows ${existingRange.from}-${existingRange.to} in ${existingRange.type}`;
+          isValid = false;
+          break;
         }
       }
-    });
+      
+      if (!newErrors[`${keyPrefix}-rows`]) {
+        usedRowRanges.push(newRange);
+      }
+    }
+  });
+
+  // Validate spaces
+  formData.spaces.forEach((space, index) => {
+    const keyPrefix = `space-${index}`;
     
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    if (!space.label.trim()) {
+      newErrors[`${keyPrefix}-label`] = "Label is required";
+      isValid = false;
+    }
+
+    const fromRow = Number(space.fromRow);
+    const toRow = Number(space.toRow);
+    
+    if (isNaN(fromRow)) {
+      newErrors[`${keyPrefix}-fromRow`] = "From row must be a number";
+      isValid = false;
+    }
+    
+    if (isNaN(toRow)) {
+      newErrors[`${keyPrefix}-toRow`] = "To row must be a number";
+      isValid = false;
+    }
+    
+    if (!isNaN(fromRow) && !isNaN(toRow)) {
+      // Validate row number range
+      if (fromRow < 1 || fromRow > MAX_ROW_NUMBER || toRow < 1 || toRow > MAX_ROW_NUMBER) {
+        newErrors[`${keyPrefix}-rows`] = `Row must be between 1 and ${MAX_ROW_NUMBER}`;
+        isValid = false;
+      }
+      
+      // Validate fromRow === toRow for spaces
+      if (fromRow !== toRow) {
+        newErrors[`${keyPrefix}-rows`] = "From row and To row must be equal for spaces";
+        isValid = false;
+      }
+      
+      // Calculate total rows and max row
+      if (isValid) {
+        totalRows += 1; // Space always counts as 1 row
+        maxRowNumber = Math.max(maxRowNumber, toRow);
+      }
+    }
+
+    // Check for row conflicts only if rows are valid
+    if (!newErrors[`${keyPrefix}-rows`] && !isNaN(fromRow) && !isNaN(toRow)) {
+      const newRange = { from: fromRow, to: toRow, type: "space", index };
+      
+      for (const existingRange of usedRowRanges) {
+        if (isRangeOverlap(newRange, existingRange)) {
+          newErrors[`${keyPrefix}-rows`] =
+            `Rows ${fromRow}-${toRow} conflict with existing rows ${existingRange.from}-${existingRange.to} in ${existingRange.type}`;
+          isValid = false;
+          break;
+        }
+      }
+      
+      if (!newErrors[`${keyPrefix}-rows`]) {
+        usedRowRanges.push(newRange);
+      }
+    }
+  });
+
+  // Validate total rows
+  if (totalRows > MAX_TOTAL_ROWS) {
+    newErrors.global = `Total rows cannot exceed ${MAX_TOTAL_ROWS} (current: ${totalRows})`;
+    isValid = false;
+  }
+
+  // Validate max row number
+  if (maxRowNumber > MAX_ROW_NUMBER) {
+    newErrors.global = newErrors.global 
+      ? `${newErrors.global} and max row cannot exceed ${MAX_ROW_NUMBER}`
+      : `Max row cannot exceed ${MAX_ROW_NUMBER}`;
+    isValid = false;
+  }
+
+  setErrors(newErrors);
+  return isValid;
+};
+
+  function isRangeOverlap(range1, range2) {
+    return (
+      (range1.from >= range2.from && range1.from <= range2.to) ||
+      (range1.to >= range2.from && range1.to <= range2.to) ||
+      (range2.from >= range1.from && range2.from <= range1.to)
+    );
+  }
 
   const generatePayload = () => {
     const totalSeats = formData.seatClasses.reduce(
@@ -261,6 +392,24 @@ function AircraftTypeCreate({ onSuccess, initialData, isEditMode = false }) {
     (total, seatClass) => total + seatClass.seats.length, 0
   );
 
+const handleViewMap = () => {
+    const isValid = validateForm(); // Kiểm tra validation
+    
+    console.log(isValid)
+
+    if (isValid) {
+      setShowPreview(true); // Chỉ hiển thị preview khi không có lỗi
+    } else {
+      // Có thể thêm toast thông báo nếu muốn
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please fix all errors before viewing map",
+        duration: 3000,
+      });
+    }
+  };
+
   return (
     <Container className="py-4">
       <Card className="shadow-lg border-0">
@@ -275,6 +424,11 @@ function AircraftTypeCreate({ onSuccess, initialData, isEditMode = false }) {
         </Card.Header>
         
         <Card.Body>
+          {errors.global && (
+            <Alert variant="danger" className="mb-4">
+              {errors.global}
+            </Alert>
+          )}
           <Tabs
             activeKey={activeTab}
             onSelect={(k) => setActiveTab(k)}
@@ -500,7 +654,7 @@ function AircraftTypeCreate({ onSuccess, initialData, isEditMode = false }) {
                     Back to basic information
                   </Button>
                   <div>
-                    <Button variant="outline-info" className="me-2" onClick={() => setShowPreview(true)}>
+                    <Button variant="outline-info" className="me-2" onClick={handleViewMap}>
                       View seat map
                     </Button>
                     <Button variant="primary" type="submit" onClick={handleSubmit}>
@@ -515,15 +669,6 @@ function AircraftTypeCreate({ onSuccess, initialData, isEditMode = false }) {
       </Card>
 
       {showPreview && <AircraftDetail show={showPreview} onHide={() => setShowPreview(false)} selectedAircraft={generatePayload()} isAircraftType={true} />}
-
-      <ToastContainer
-        position="top-right"
-        autoClose={2000}
-        hideProgressBar={false}
-        closeOnClick
-        pauseOnHover
-        theme="light"
-      />
 
     </Container>
   );

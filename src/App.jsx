@@ -1,3 +1,4 @@
+import CheckedInBoardingList from './pages/CheckIn/CheckedInBoardingList';
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -14,26 +15,29 @@ import Booking from './pages/Booking/Booking';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 import Dashboard from './pages/Dashboard/Dashboard';
-import CheckIn from './pages/CheckIn/CheckIn';
-import CheckInList from './pages/CheckIn/CheckedInList';
 import About from './pages/About/About';
 import Contact from './pages/Contact/Contact';
 import VoucherManagement from './pages/Dashboard/VoucherManagement';
-import CheckInDetail from "./pages/CheckIn/CheckInDetail"
+import BookingManagement from './pages/Dashboard/BookingManagement';
+import BookingOverviewStats from './pages/Dashboard/BookingOverviewStats';
 import BookingOverview from './pages/Booking/BookingOverview';
 import BookingDetails from './pages/Booking/BookingDetails';
 import Aircraft from './pages/Aircraft';
 import ManagementAircraft from './pages/ManagementAircraft';
 import FlightList from './pages/Dashboard/Flights/FlightList';
 import CreateFlight from './pages/Dashboard/Flights/CreateFlight';
+import EditFlight from './pages/Dashboard/Flights/EditFlight';
 import RouteList from './pages/Dashboard/Routes/RouteList';
 import CreateRoute from './pages/Dashboard/Routes/CreateRoute';
 import PaymentResult from './pages/Booking/PaymentResult';
 import { Toaster } from "@/components/ui/toaster";
+import BoardingPassList from './pages/CheckIn/BoardingPassList';
 import PaymentSuccess from './pages/Payment/PaymentSuccess';
 import PaymentFailed from './pages/Payment/PaymentFailed';
 import RefundManagement from './pages/Dashboard/RefundManagement';
 import MyRefundRequests from './pages/Booking/MyRefundRequests';
+import Membership from './pages/Membership/Membership';
+import RedeemVoucher from './pages/RedeemVoucher/RedeemVoucher';
 
 const FlightManagement = () => (
   <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -117,15 +121,21 @@ export const App = () => {
               <Route path="flights" element={<Flights />} />
               {/* <Route path="aircraft" element={<Aircraft />} /> */}
               <Route path="booking" element={<Booking />} />
-
-              <Route path="check-in/detail/:bookingReference" element={
-                <ProtectedRoute roles={['user']}>
-                  <CheckInDetail />
-                </ProtectedRoute>
-              } />
-              <Route path="check-in-history" element={<CheckInList />} />
+              <Route
+                path="check-in/boarding-pass"
+                element={
+                  <ProtectedRoute roles={['user']}>
+                    <BoardingPassList />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="about" element={<About />} />
               <Route path="contact" element={<Contact />} />
+
+              <Route
+                path="my-boarding-passes"
+                element={<CheckedInBoardingList />}
+              />
 
               {/* Protected User Routes */}
               <Route
@@ -144,7 +154,7 @@ export const App = () => {
                   </ProtectedRoute>
                 }
               />
-              
+
               {/* Refund Requests for Users */}
               <Route
                 path="my-refund-requests"
@@ -154,15 +164,33 @@ export const App = () => {
                   </ProtectedRoute>
                 }
               />
-              
+
+              {/* Loyalty Program Routes */}
+              <Route
+                path="membership"
+                element={
+                  <ProtectedRoute roles={['user']}>
+                    <Membership />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="redeem-voucher"
+                element={
+                  <ProtectedRoute roles={['user']}>
+                    <RedeemVoucher />
+                  </ProtectedRoute>
+                }
+              />
+
               <Route path="/payment/success" element={<PaymentSuccess />} />
               <Route path="/payment/failed" element={<PaymentFailed />} />
             </Route>
 
             {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />            
-            
+            <Route path="/register" element={<Register />} />
+
             {/* Dashboard Routes for Staff/Admin */}
             <Route
               path="/dashboard"
@@ -202,6 +230,14 @@ export const App = () => {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="flights/:flightId/edit"
+                element={
+                  <ProtectedRoute roles={['admin']}>
+                    <EditFlight />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="schedules" element={<Schedules />} />
 
               {/* Route Management */}
@@ -223,6 +259,14 @@ export const App = () => {
               />
 
               {/* Booking Management */}
+              <Route
+                path="bookings"
+                element={
+                  <ProtectedRoute roles={['staff', 'admin']}>
+                    <BookingManagement />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="passengers" element={<Passengers />} />
 
               {/* Voucher Management */}

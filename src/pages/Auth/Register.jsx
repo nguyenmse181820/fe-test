@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateOfBirthPicker } from "@/components/ui/date-of-birth-picker";
 import {
   Select,
   SelectContent,
@@ -250,14 +250,13 @@ const Register = () => {
               {/* DOB and Gender */}
               <div className="grid gap-2">
                 <Label htmlFor="dob">Date of Birth</Label>
-                <DatePicker
+                <DateOfBirthPicker
                   date={selectedDate}
                   onSelect={handleDateChange}
                   placeholder="Select your date of birth"
                   required
-                  captionLayout="dropdown"
-                  startYear={1920}
-                  endYear={2006}
+                  minYear={1920}
+                  maxYear={2006}
                 />
               </div>
 

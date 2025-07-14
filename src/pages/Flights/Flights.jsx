@@ -22,7 +22,6 @@ import FlightService from '../../services/FlightService';
 import { CustomTabs, CustomTabsList, CustomTabsTrigger } from '../../components/ui/custom-tabs';
 import { getMultiTimezoneDisplay, formatTimeWithTimezone, formatDateWithTimezone, getUserTimezone, parseBackendDateTime, convertLocalToUTC } from '../../utils/timezone';
 import { useToast } from "@/hooks/use-toast";
-import { Toaster } from "@/components/ui/toaster";
 import { format } from "date-fns";
 
 const Flights = () => {
@@ -95,11 +94,6 @@ const Flights = () => {
 
   // Update search form when searchCriteria changes
   useEffect(() => {
-    console.log('🔍 SearchCriteria updated:', searchCriteria);
-    console.log('- Trip type:', searchCriteria.tripType);
-    console.log('- Departure date:', searchCriteria.departureDate);
-    console.log('- Return date:', searchCriteria.returnDate);
-    console.log('- Route ID:', searchCriteria.routeId);
     setSearchForm({
       from: searchCriteria.from || '',
       to: searchCriteria.to || '',
@@ -125,7 +119,7 @@ const Flights = () => {
           FlightService.getAirports(),
           FlightService.getRoutes().catch(() => [])
         ]);
-        
+
         setAirports(airportData);
         setRoutes(routeData);
 
@@ -141,7 +135,7 @@ const Flights = () => {
 
           try {
             const searchResults = await FlightService.searchFlights(searchRequest);
-            
+
             // Transform direct flights
             const transformedDirectFlights = (searchResults.directs || []).map(flight => ({
               id: flight.flightId,
@@ -166,7 +160,7 @@ const Flights = () => {
               // For connecting flights, we'll create a combined flight object
               const firstFlight = flightGroup[0];
               const lastFlight = flightGroup[flightGroup.length - 1];
-              
+
               return {
                 id: `connect-${index}-${firstFlight.flightId}`,
                 code: flightGroup.map(f => f.flightCode).join(' → '),
@@ -190,22 +184,14 @@ const Flights = () => {
 
             // Combine both direct and connecting flights
             const allTransformedFlights = [...transformedDirectFlights, ...transformedConnectingFlights];
-            
+
             setFlights(allTransformedFlights);
             setFilteredFlights(allTransformedFlights);
 
             // If this is a round trip, search for return flights too
             if (searchCriteria.tripType === 'round-trip' && searchCriteria.returnDate) {
-              console.log('🔄 Searching for return flights...');
-              console.log('Return date:', searchCriteria.returnDate);
-              console.log('Route ID:', searchCriteria.routeId);
-
-              // For return flights, we need to find the route that goes in the opposite direction
-              // First, get all routes to find the return route
               try {
-                console.log('📍 Available routes:', routeData);
                 const currentRoute = routeData.find(route => route.id === searchCriteria.routeId);
-                console.log('📍 Current route:', currentRoute);
 
                 if (currentRoute) {
                   // Find the return route (destination → origin)
@@ -213,33 +199,28 @@ const Flights = () => {
                     route.origin?.code === currentRoute.destination?.code &&
                     route.destination?.code === currentRoute.origin?.code
                   );
-                  console.log('📍 Return route found:', returnRoute);
 
                   // Debug: Let's see all HAN → SGN routes
                   const hanToSgnRoutes = routeData.filter(route =>
                     route.origin?.code === 'HAN' && route.destination?.code === 'SGN'
                   );
-                  console.log('🛤️ All HAN → SGN routes:', hanToSgnRoutes);
 
-                  if (returnRoute) {                        const returnSearchRequest = {
-                          routeId: returnRoute.id,
-                          departureDate: searchCriteria.returnDate,
-                          noAdults: searchCriteria.passengers?.adults || 1,
-                          noChildren: searchCriteria.passengers?.children || 0,
-                          noBabies: searchCriteria.passengers?.babies || 0
-                        };
-                    console.log('🔍 Return search request:', returnSearchRequest);
+                  if (returnRoute) {
+                    const returnSearchRequest = {
+                      routeId: returnRoute.id,
+                      departureDate: searchCriteria.returnDate,
+                      noAdults: searchCriteria.passengers?.adults || 1,
+                      noChildren: searchCriteria.passengers?.children || 0,
+                      noBabies: searchCriteria.passengers?.babies || 0
+                    };
 
                     const returnSearchResults = await FlightService.searchFlights(returnSearchRequest);
-                    console.log('✈️ Return search results:', returnSearchResults);
 
                     // If no flights found on the primary return route, try other HAN → SGN routes
                     if (returnSearchResults.total === 0 && hanToSgnRoutes.length > 1) {
-                      console.log('🔄 No flights on primary return route, trying other HAN → SGN routes...');
 
                       for (const alternateRoute of hanToSgnRoutes) {
                         if (alternateRoute.id !== returnRoute.id) {
-                          console.log('🔍 Trying alternate route:', alternateRoute.id);
                           const alternateRequest = {
                             ...returnSearchRequest,
                             routeId: alternateRoute.id
@@ -247,11 +228,8 @@ const Flights = () => {
 
                           try {
                             const alternateResults = await FlightService.searchFlights(alternateRequest);
-                            console.log(`✈️ Alternate route ${alternateRoute.id} results:`, alternateResults);
 
                             if (alternateResults.total > 0) {
-                              console.log('✅ Found flights on alternate route!');
-                              // Use results from this route instead
                               Object.assign(returnSearchResults, alternateResults);
                               break;
                             }
@@ -264,8 +242,6 @@ const Flights = () => {
 
                     // If no flights found on the exact date, let's check nearby dates
                     if (returnSearchResults.total === 0) {
-                      console.log('⚠️ No return flights found for', searchCriteria.returnDate);
-                      console.log('🔍 Let me check what dates have flights available...');
 
                       // Check the next few days
                       const checkDates = [];
@@ -280,12 +256,11 @@ const Flights = () => {
                         try {
                           const checkRequest = { ...returnSearchRequest, departureDate: checkDate };
                           const checkResults = await FlightService.searchFlights(checkRequest);
-                          console.log(`📅 ${checkDate}: ${checkResults.total} flights available`);
                           if (checkResults.total > 0) {
-                            console.log('✅ Flights found on', checkDate, ':', checkResults.directs.map(f => f.flightCode));
+                            console.log('Flights found on', checkDate, ':', checkResults.directs.map(f => f.flightCode));
                           }
                         } catch (err) {
-                          console.log(`❌ Error checking ${checkDate}:`, err);
+                          console.log(`Error checking ${checkDate}:`, err);
                         }
                       }
                     }
@@ -312,7 +287,7 @@ const Flights = () => {
                     const transformedReturnConnectingFlights = (returnSearchResults.connects || []).map((flightGroup, index) => {
                       const firstFlight = flightGroup[0];
                       const lastFlight = flightGroup[flightGroup.length - 1];
-                      
+
                       return {
                         id: `return-connect-${index}-${firstFlight.flightId}`,
                         code: flightGroup.map(f => f.flightCode).join(' → '),
@@ -335,22 +310,17 @@ const Flights = () => {
                     });
 
                     const allTransformedReturnFlights = [...transformedReturnDirectFlights, ...transformedReturnConnectingFlights];
-                    console.log('✈️ Transformed return flights:', allTransformedReturnFlights);
-                    setReturnFlights(allTransformedReturnFlights);                } else {
-                  console.warn('❌ No return route found for the selected route');
-                  console.log('Looking for route from', currentRoute.destination?.code, 'to', currentRoute.origin?.code);
-                }
+                    setReturnFlights(allTransformedReturnFlights);
+                  } else {
+                    console.log('Looking for route from', currentRoute.destination?.code, 'to', currentRoute.origin?.code);
+                  }
                 } else {
-                  console.warn('❌ Current route not found with ID:', searchCriteria.routeId);
+                  console.warn('Current route not found with ID:', searchCriteria.routeId);
                 }
               } catch (returnSearchErr) {
-                console.error('❌ Error searching return flights:', returnSearchErr);
-                // Don't fail completely if return search fails
+                console.error(' Error searching return flights:', returnSearchErr);
               }
             } else {
-              console.log('⚠️ Not searching for return flights because:');
-              console.log('- Trip type:', searchCriteria.tripType);
-              console.log('- Return date:', searchCriteria.returnDate);
             }
           } catch (searchErr) {
             console.error('Error searching flights:', searchErr);
@@ -375,21 +345,6 @@ const Flights = () => {
       setShowSearchBar(true);
     }
   }, [loading, filteredFlights]);
-
-  // Debug effect to track returnFlights changes
-  useEffect(() => {
-    console.log('🛩️ Return flights updated:', returnFlights);
-    console.log('🛩️ Return flights count:', returnFlights.length);
-    if (returnFlights.length > 0) {
-      console.log('🛩️ First return flight:', returnFlights[0]);
-    }
-  }, [returnFlights]);
-
-  // Debug effect to track active tab changes
-  useEffect(() => {
-    console.log('📱 Active tab changed to:', activeTab);
-    console.log('📱 Current flights being displayed:', activeTab === 'departure' ? filteredFlights.length : returnFlights.length);
-  }, [activeTab]);
 
   // Helper to format passenger count
   const formatPassengerCount = (passengers) => {
@@ -432,7 +387,7 @@ const Flights = () => {
       filtered = filtered.filter(flight => {
         const date = parseBackendDateTime(flight.departureTime);
         if (!date || isNaN(date.getTime())) return true;
-        
+
         // Get hour in user's timezone for filtering
         const hour = date.toLocaleString('en-US', {
           timeZone: getUserTimezone(),
@@ -440,7 +395,7 @@ const Flights = () => {
           hour12: false
         });
         const hourNum = parseInt(hour, 10);
-        
+
         switch (filters.timeOfDay) {
           case 'morning': return hourNum >= 6 && hourNum < 12;
           case 'afternoon': return hourNum >= 12 && hourNum < 18;
@@ -536,23 +491,10 @@ const Flights = () => {
         const localSearchTime = searchDate.toISOString();
         const utcSearchTime = convertLocalToUTC(searchDate);
 
-        console.log('✈️ Search initiated with timezone info:');
-        console.log(`Route: ${searchForm.from} → ${searchForm.to}`);
-        console.log(`Passengers: ${searchForm.passengers.adults} adults, ${searchForm.passengers.children} children, ${searchForm.passengers.babies} babies`);
-        console.log('🌍 Search Time Comparison:');
-        console.log(`- User timezone: ${userTimezone}`);
-        console.log(`- Local search time: ${formatTimeWithTimezone(localSearchTime, userTimezone)}`);
-        console.log(`- UTC search time: ${formatTimeWithTimezone(utcSearchTime, 'UTC')}`);
-        console.log(`- Search date: ${format(searchDate, 'yyyy-MM-dd')}`);
-
         // Add return date timezone info for round-trip
         if (searchForm.tripType === 'round-trip' && searchForm.returnDate) {
           const returnDate = new Date(searchForm.returnDate);
           const returnLocalTime = returnDate.toISOString();
-          const returnUtcTime = convertLocalToUTC(returnDate);
-          console.log('🔄 Return Time Comparison:');
-          console.log(`- Local return time: ${formatTimeWithTimezone(returnLocalTime, userTimezone)}`);
-          console.log(`- UTC return time: ${formatTimeWithTimezone(returnUtcTime, 'UTC')}`);
         }
 
         // Navigate to flights page with search parameters
@@ -577,12 +519,12 @@ const Flights = () => {
   // Helper function to extract flight IDs from a flight object
   const extractFlightIds = (flight) => {
     if (!flight) return [];
-    
+
     // For connecting flights, extract all segment flight IDs
     if (flight.type === 'connecting' && flight.segments && flight.segments.length > 0) {
       return flight.segments.map(segment => segment.flightId || segment.id).filter(id => id);
     }
-    
+
     // For direct flights, use the main flight ID
     return [flight.id];
   };
@@ -592,7 +534,7 @@ const Flights = () => {
     if (searchCriteria.tripType === 'one-way' || (activeTab === 'return' && selectedDepartureFlight)) {
       // Extract flight IDs
       let allFlightIds = [];
-      
+
       if (searchCriteria.tripType === 'one-way') {
         // For one-way trips, just get the selected flight's IDs
         allFlightIds = extractFlightIds(flight);
@@ -605,7 +547,7 @@ const Flights = () => {
 
       // Calculate number of passengers (adults + children, excluding babies)
       const noPassengers = (searchCriteria.passengers?.adults || 1) + (searchCriteria.passengers?.children || 0);
-      
+
       // Create URL parameters with detailed passenger breakdown
       const params = new URLSearchParams({
         flights: allFlightIds.join(','),
@@ -625,7 +567,6 @@ const Flights = () => {
   };
 
   const handleViewDetails = async (flight) => {
-    console.log('View Details clicked for flight:', flight);
     setSelectedFlight(flight);
     setDetailsModalOpen(true);
     setLoadingDetails(true);
@@ -648,7 +589,7 @@ const Flights = () => {
     if (!date || isNaN(date.getTime())) {
       return 'Invalid Time';
     }
-    
+
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
@@ -661,7 +602,7 @@ const Flights = () => {
     if (!date || isNaN(date.getTime())) {
       return 'Invalid Date';
     }
-    
+
     return date.toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
@@ -710,11 +651,11 @@ const Flights = () => {
   const formatDuration = (departureTime, arrivalTime) => {
     const departure = parseBackendDateTime(departureTime);
     const arrival = parseBackendDateTime(arrivalTime);
-    
+
     if (!departure || !arrival || isNaN(departure.getTime()) || isNaN(arrival.getTime())) {
       return 'N/A';
     }
-    
+
     const diffMs = arrival - departure;
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     const minutes = Math.round((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -751,8 +692,6 @@ const Flights = () => {
 
   // Modal for flight details
   const renderDetailsModal = () => {
-    console.log('Rendering modal. Open:', detailsModalOpen, 'Selected flight:', selectedFlight);
-
     if (!detailsModalOpen) return null;
 
     const details = flightDetails || selectedFlight;
@@ -1177,7 +1116,7 @@ const Flights = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Modern Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-50">
+      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -1214,27 +1153,25 @@ const Flights = () => {
                 ✕
               </button>
             </div>
-            
+
             {/* Trip Type Selector */}
             <div className="mb-4">
               <div className="flex space-x-4">
                 <button
                   onClick={() => setSearchForm(prev => ({ ...prev, tripType: 'one-way' }))}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                    searchForm.tripType === 'one-way'
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${searchForm.tripType === 'one-way'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   One-way
                 </button>
                 <button
                   onClick={() => setSearchForm(prev => ({ ...prev, tripType: 'round-trip' }))}
-                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                    searchForm.tripType === 'round-trip'
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${searchForm.tripType === 'round-trip'
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   Round-trip
                 </button>
@@ -1281,7 +1218,7 @@ const Flights = () => {
                   </div>
                 )}
               </div>
-              
+
               {/* To */}
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-2">To</label>
@@ -1321,7 +1258,7 @@ const Flights = () => {
                   </div>
                 )}
               </div>
-              
+
               {/* Departure Date */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Departure Date</label>
@@ -1333,7 +1270,7 @@ const Flights = () => {
                   min={new Date().toISOString().split('T')[0]}
                 />
               </div>
-              
+
               {/* Return Date (only for round-trip) */}
               {searchForm.tripType === 'round-trip' && (
                 <div>
@@ -1655,7 +1592,7 @@ const Flights = () => {
                         <div className="mb-6">
                           <div className="flex items-center justify-between mb-4">
                             <div className="text-sm font-semibold text-gray-700">
-                              Total Duration: {flight.flightDurationMinutes ? 
+                              Total Duration: {flight.flightDurationMinutes ?
                                 `${Math.floor(flight.flightDurationMinutes / 60)}h ${flight.flightDurationMinutes % 60}m` :
                                 formatDuration(flight.departureTime, flight.estimatedArrivalTime)
                               }
@@ -1664,14 +1601,14 @@ const Flights = () => {
                               {flight.stops} Stop{flight.stops > 1 ? 's' : ''}
                             </div>
                           </div>
-                          
+
                           {/* Timeline using OriginUI pattern */}
                           <div className="flow-root">
                             <ul className="-mb-8">
                               {flight.segments?.map((segment, segmentIdx) => {
                                 const isLastSegment = segmentIdx === flight.segments.length - 1;
                                 const nextSegment = !isLastSegment ? flight.segments[segmentIdx + 1] : null;
-                                
+
                                 // Calculate layover time
                                 let layoverDuration = '';
                                 if (nextSegment) {
@@ -1713,19 +1650,19 @@ const Flights = () => {
                                                   {formatDate(segment.departureTime)}
                                                 </div>
                                               </div>
-                                              
+
                                               {/* Flight info */}
                                               <div className="text-center">
                                                 <div className="text-sm font-medium text-blue-600">{segment.flightCode}</div>
                                                 <div className="text-xs text-gray-500">{segment.aircraft?.model || 'Boeing Aircraft'}</div>
                                                 <div className="text-xs text-gray-500">
-                                                  {segment.flightDurationMinutes ? 
+                                                  {segment.flightDurationMinutes ?
                                                     `${Math.floor(segment.flightDurationMinutes / 60)}h ${segment.flightDurationMinutes % 60}m` :
                                                     formatDuration(segment.departureTime, segment.estimatedArrivalTime)
                                                   }
                                                 </div>
                                               </div>
-                                              
+
                                               {/* Arrival */}
                                               <div className="text-right">
                                                 <div className="text-lg font-bold text-gray-900">
@@ -1779,7 +1716,7 @@ const Flights = () => {
                                   </React.Fragment>
                                 );
                               })}
-                              
+
                               {/* Final arrival */}
                               <li>
                                 <div className="relative">
@@ -1827,7 +1764,7 @@ const Flights = () => {
                           {/* Route Line */}
                           <div className="col-span-3 flex flex-col items-center">
                             <div className="text-sm font-semibold text-gray-700 mb-2">
-                              {flight.flightDurationMinutes ? 
+                              {flight.flightDurationMinutes ?
                                 `${Math.floor(flight.flightDurationMinutes / 60)}h ${flight.flightDurationMinutes % 60}m` :
                                 formatDuration(flight.departureTime, flight.estimatedArrivalTime)
                               }
@@ -1956,9 +1893,8 @@ const Flights = () => {
           </div>
         </div>
       </div>
-      
-      {/* Toast notifications */}
-      <Toaster />
+
+      {/* No Toaster here - using global one in App.jsx */}
     </div>
   );
 };

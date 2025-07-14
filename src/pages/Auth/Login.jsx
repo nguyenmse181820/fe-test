@@ -1,5 +1,5 @@
 // src/pages/auth/Login.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from "@/hooks/use-toast";
@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { AlertCircle, Loader2, Plane } from 'lucide-react';
+import { AlertCircle, Loader2, Plane, Home } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -28,6 +28,7 @@ const Login = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const toastShownRef = useRef(false);
 
   useEffect(() => {
     // Check if we have a message from registration
@@ -46,7 +47,7 @@ const Login = () => {
         username: location.state.email
       }));
     }
-  }, [location.state, toast]);
+  }, [location.state]); // Removed toast from dependency array since it should be stable
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -59,6 +60,10 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prevent double submission
+    if (loading) return;
+    
     setLoading(true);
     setError('');
 
@@ -66,11 +71,26 @@ const Login = () => {
       const result = await login(formData);
 
       if (result.success) {
-        toast({
-          title: "Login successful",
-          description: "Welcome back to Boeing Airways!",
-          duration: 3000,
-        });
+        console.log('Login successful, showing toast'); // Debug log
+        
+        // Prevent duplicate toasts using ref and timeout debouncing
+        if (!toastShownRef.current) {
+          toastShownRef.current = true;
+          
+          // Use setTimeout to ensure toast is called only once
+          setTimeout(() => {
+            toast({
+              title: "Login successful",
+              description: "Welcome back to Boeing Airways!",
+              duration: 3000,
+            });
+          }, 0);
+          
+          // Reset the ref after a delay to allow future logins
+          setTimeout(() => {
+            toastShownRef.current = false;
+          }, 5000);
+        }
         
         // Redirect based on role
         if (result.role === 'admin' || result.role === 'staff') {
@@ -105,7 +125,16 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-indigo-700 flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-xl border-0">
-        <CardHeader className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-t-lg p-6 text-center">
+        <CardHeader className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-t-lg p-6 text-center relative">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute top-4 left-4 text-white hover:bg-white/20 p-2"
+            onClick={() => navigate('/')}
+          >
+            <Home className="h-4 w-4 mr-2" />
+            Home
+          </Button>
           <div className="flex justify-center mb-4">
             <div className="bg-white/20 p-3 rounded-full">
               <Plane className="h-8 w-8" />

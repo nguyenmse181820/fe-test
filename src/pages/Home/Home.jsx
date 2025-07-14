@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { Toaster } from "@/components/ui/toaster";
 import { format } from "date-fns";
 import FlightService from '../../services/FlightService';
 import { airports, promotions, destinations } from '../../data/mockData';
@@ -222,17 +221,20 @@ const Home = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-900/90 to-blue-500/90 h-[70vh] flex items-center justify-center text-white text-center relative">
-        <div className="max-w-[800px] px-8">
-          <h1 className="text-5xl font-bold mb-4 leading-tight">Discover Your Next Adventure</h1>
-          <p className="text-xl mb-8 opacity-90">
+      <section className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 h-[45vh] flex items-center justify-center text-white text-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="max-w-[700px] px-8 relative z-10">
+          <h1 className="text-3xl md:text-4xl font-bold mb-3 leading-tight bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Discover Your Next Adventure</h1>
+          <p className="text-lg mb-6 opacity-95 text-blue-50">
             Book flights to amazing destinations worldwide with Boeing Airways
           </p>
         </div>
+        <div className="absolute top-10 right-10 w-32 h-32 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full opacity-20 animate-pulse"></div>
+        <div className="absolute bottom-20 left-20 w-24 h-24 bg-gradient-to-r from-green-400 to-teal-500 rounded-full opacity-20 animate-pulse delay-1000"></div>
       </section>
 
       {/* Search Section */}
-      <section className="relative z-10 mx-auto max-w-5xl px-4 -mt-16">
+      <section className="relative z-10 mx-auto max-w-5xl px-4 -mt-12">
         <Card className="bg-white shadow-lg">
           <CardHeader>
             <Tabs defaultValue="one-way" className="w-full" onValueChange={(value) => handleInputChange('tripType', value)}>
@@ -509,48 +511,48 @@ const Home = () => {
       <section className="py-12 px-4 max-w-5xl mx-auto">
         <h2 className="text-3xl font-bold mb-8 text-center">Special Offers</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="overflow-hidden">
-            <CardHeader className="pb-2">
+          <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-orange-50 to-yellow-50">
+            <CardHeader className="pb-2 bg-gradient-to-r from-orange-500 to-yellow-500 text-white">
               <div className="flex items-center justify-center mb-2">
-                <PartyPopper className="h-12 w-12 text-primary" />
+                <PartyPopper className="h-12 w-12" />
               </div>
-              <CardTitle>Summer Getaway</CardTitle>
+              <CardTitle className="text-white">Summer Getaway</CardTitle>
             </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base">Get 20% off on all international flights this summer. Book by July 30th.</CardDescription>
+            <CardContent className="pt-4">
+              <CardDescription className="text-base text-gray-700">Get 20% off on all international flights this summer. Book by July 30th.</CardDescription>
             </CardContent>
-            <CardFooter className="bg-muted/50 pt-2">
-              <p className="text-sm font-medium">Code: SUMMER20</p>
+            <CardFooter className="bg-orange-100 pt-2">
+              <p className="text-sm font-medium text-orange-800">Code: SUMMER20</p>
             </CardFooter>
           </Card>
 
-          <Card className="overflow-hidden">
-            <CardHeader className="pb-2">
+          <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-purple-50 to-indigo-50">
+            <CardHeader className="pb-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
               <div className="flex items-center justify-center mb-2">
-                <PartyPopper className="h-12 w-12 text-primary" />
+                <PartyPopper className="h-12 w-12" />
               </div>
-              <CardTitle>Business Class Special</CardTitle>
+              <CardTitle className="text-white">Business Class Special</CardTitle>
             </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base">Upgrade to Business Class for just $299 extra on long-haul flights.</CardDescription>
+            <CardContent className="pt-4">
+              <CardDescription className="text-base text-gray-700">Upgrade to Business Class for just 7,000,000 VNĐ extra on long-haul flights.</CardDescription>
             </CardContent>
-            <CardFooter className="bg-muted/50 pt-2">
-              <p className="text-sm font-medium">Code: BIZUP299</p>
+            <CardFooter className="bg-purple-100 pt-2">
+              <p className="text-sm font-medium text-purple-800">Code: BIZUP299</p>
             </CardFooter>
           </Card>
 
-          <Card className="overflow-hidden">
-            <CardHeader className="pb-2">
+          <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-green-50 to-emerald-50">
+            <CardHeader className="pb-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white">
               <div className="flex items-center justify-center mb-2">
-                <PartyPopper className="h-12 w-12 text-primary" />
+                <PartyPopper className="h-12 w-12" />
               </div>
-              <CardTitle>Family Package</CardTitle>
+              <CardTitle className="text-white">Family Package</CardTitle>
             </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base">Children fly for half price when booking for 4 or more passengers.</CardDescription>
+            <CardContent className="pt-4">
+              <CardDescription className="text-base text-gray-700">Children fly for half price when booking for 4 or more passengers.</CardDescription>
             </CardContent>
-            <CardFooter className="bg-muted/50 pt-2">
-              <p className="text-sm font-medium">Code: FAMILY50</p>
+            <CardFooter className="bg-green-100 pt-2">
+              <p className="text-sm font-medium text-green-800">Code: FAMILY50</p>
             </CardFooter>
           </Card>
         </div>
@@ -560,46 +562,45 @@ const Home = () => {
       <section className="py-12 px-4 max-w-5xl mx-auto">
         <h2 className="text-3xl font-bold mb-8 text-center">Popular Destinations</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="overflow-hidden">
-            <CardHeader className="pb-2">
+          <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-rose-50 to-pink-50">
+            <CardHeader className="pb-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white">
               <div className="flex items-center justify-center mb-2">
-                <Building2 className="h-12 w-12 text-primary" />
+                <Building2 className="h-12 w-12" />
               </div>
-              <CardTitle>Paris, France</CardTitle>
+              <CardTitle className="text-white">Paris, France</CardTitle>
             </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base">Explore the city of lights with our daily flights to Paris.</CardDescription>
+            <CardContent className="pt-4">
+              <CardDescription className="text-base text-gray-700">Explore the city of lights with our daily flights to Paris.</CardDescription>
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden">
-            <CardHeader className="pb-2">
+          <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-red-50 to-orange-50">
+            <CardHeader className="pb-2 bg-gradient-to-r from-red-500 to-orange-500 text-white">
               <div className="flex items-center justify-center mb-2">
-                <Building2 className="h-12 w-12 text-primary" />
+                <Building2 className="h-12 w-12" />
               </div>
-              <CardTitle>Tokyo, Japan</CardTitle>
+              <CardTitle className="text-white">Tokyo, Japan</CardTitle>
             </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base">Experience the blend of traditional and modern culture in Tokyo.</CardDescription>
+            <CardContent className="pt-4">
+              <CardDescription className="text-base text-gray-700">Experience the blend of traditional and modern culture in Tokyo.</CardDescription>
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden">
-            <CardHeader className="pb-2">
+          <Card className="overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-blue-50 to-cyan-50">
+            <CardHeader className="pb-2 bg-gradient-to-r from-blue-600 to-cyan-500 text-white">
               <div className="flex items-center justify-center mb-2">
-                <Building2 className="h-12 w-12 text-primary" />
+                <Building2 className="h-12 w-12" />
               </div>
-              <CardTitle>New York, USA</CardTitle>
+              <CardTitle className="text-white">New York, USA</CardTitle>
             </CardHeader>
-            <CardContent>
-              <CardDescription className="text-base">The city that never sleeps awaits with our premium service flights.</CardDescription>
+            <CardContent className="pt-4">
+              <CardDescription className="text-base text-gray-700">The city that never sleeps awaits with our premium service flights.</CardDescription>
             </CardContent>
           </Card>
         </div>
       </section>
 
-      {/* Toast notifications */}
-      <Toaster />
+      {/* No Toaster here - using global one in App.jsx */}
     </div>
   );
 };
